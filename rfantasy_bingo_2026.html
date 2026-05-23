@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>r/Fantasy 2026 Book Bingo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #7b4fc9 0%, #5b8dd9 50%, #4ecfcf 100%);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+
+  /* ── Header ── */
+  .bingo-header { text-align: center; margin-bottom: 1.5rem; }
+  .bingo-header h1 { font-size: 42px; font-weight: 900; color: #fff; letter-spacing: -1px; text-shadow: 3px 3px 0 #4a2080, -1px -1px 0 #4a2080; font-style: italic; line-height: 1; }
+  .bingo-header p { font-size: 14px; color: rgba(255,255,255,0.88); margin-top: 8px; }
+
+  /* ── Stats ── */
+  .stats { display: flex; gap: 8px; margin-bottom: 1rem; }
+  .stat { background: rgba(255,255,255,0.18); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.25); border-radius: 10px; padding: 8px 10px; flex: 1; text-align: center; transition: background 0.15s, transform 0.12s; cursor: pointer; position: relative; z-index: 0; }
+  .stat:hover { background: rgba(255,255,255,0.28); transform: translateY(-2px); }
+  .stat:hover .stat-label { text-decoration: underline; text-underline-offset: 2px; }
+  .stat-num { font-size: 18px; font-weight: 700; color: #fff; line-height: 1; }
+  .stat-label { font-size: 10px; color: rgba(255,255,255,0.75); margin-top: 3px; }
+
+  /* ── Underline tabs ── */
+  .tab-bar { display: flex; gap: 0; border-bottom: 2px solid rgba(255,255,255,0.2); margin-bottom: 1.25rem; }
+  .tab-btn { flex: 1; padding: 10px 12px 11px; border: none; background: transparent; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; color: rgba(255,255,255,0.6); position: relative; transition: color 0.18s; }
+  .tab-btn.active { color: #fff; }
+  .tab-btn.active::after { content: ''; position: absolute; bottom: -2px; left: 10%; right: 10%; height: 2px; background: #fff; border-radius: 2px; }
+  .tab-btn.inactive:hover { color: rgba(255,255,255,0.85); }
+  .tab-count { border-radius: 20px; padding: 1px 8px; font-size: 11px; font-weight: 700; }
+  .tab-btn.active   .tab-count { background: rgba(255,255,255,0.25); color: #fff; }
+  .tab-btn.inactive .tab-count { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.6); }
+  /* Inline pool */
+  .inline-pool-wrap { background: #fff; border-radius: 14px; overflow: hidden; margin-bottom: 1.25rem; }
+
+  /* ── Grid ── */
+  .grid-wrap { background: #5b3fa0; border-radius: 20px; padding: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+  .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+
+  .square { border-radius: 10px; cursor: pointer; transition: transform 0.1s, filter 0.1s; overflow: hidden; user-select: none; display: flex; flex-direction: column; }
+  .square:hover { transform: scale(1.03); filter: brightness(1.07); }
+  .square.gold  { background: #f5b731; }
+  .square.cream { background: #d4c98a; }
+  .square.assigned.gold  { background: #2abcf5; }
+  .square.assigned.cream { background: #5dd0f8; }
+  .square.read.gold  { background: #82b840; }
+  .square.read.cream { background: #97c459; }
+
+  .sq-cover { width: 100%; flex: 1; position: relative; display: flex; align-items: center; justify-content: center; min-height: 110px; overflow: hidden; }
+  .sq-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .sq-cover-ph { font-size: 24px; opacity: 0.35; }
+
+  /* candidate count badge — top-left of cover */
+  .sq-cand { position: absolute; top: 5px; left: 5px; font-size: 11px; font-weight: 800; border-radius: 10px; padding: 3px 9px; background: rgba(74,32,128,0.85); color: #fff; z-index: 2; letter-spacing: 0.01em; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+  /* empty-cell add hint */
+  .sq-cover-hint { position: absolute; bottom: 8px; left: 0; right: 0; text-align: center; font-size: 9px; font-weight: 700; color: rgba(0,0,0,0.22); letter-spacing: 0.04em; text-transform: uppercase; opacity: 0; transition: opacity 0.18s; pointer-events: none; }
+  .square:hover .sq-cover-hint { opacity: 1; }
+  /* author conflict — ring on square + badge top-right */
+  .square.author-conflict { box-shadow: inset 0 0 0 3px #c0392b; }
+  .sq-conflict { position: absolute; top: 5px; right: 5px; font-size: 10px; font-weight: 800; border-radius: 10px; padding: 3px 7px; background: #c0392b; color: #fff; z-index: 2; box-shadow: 0 1px 5px rgba(0,0,0,0.5); letter-spacing: 0.02em; }
+
+  /* HM ribbon */
+  .sq-hm { position: absolute; top: 16px; right: -24px; width: 90px; text-align: center; font-size: 10px; font-weight: 800; color: #2a1040; background: #f5b731; padding: 4px 0; transform: rotate(45deg); z-index: 2; letter-spacing: 0.05em; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+
+  .sq-body { flex-shrink: 0; min-height: 66px; padding: 5px 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: rgba(0,0,0,0.12); }
+  .sq-name { font-size: 12px; font-weight: 700; line-height: 1.3; text-align: center; color: #2a1040; }
+  .sq-stars { display: flex; gap: 1px; }
+  .sq-star { font-size: 11px; cursor: pointer; opacity: 0.28; transition: opacity 0.1s; }
+  .sq-star.on { opacity: 1; }
+  .sq-star:hover { opacity: 0.6; }
+
+  /* ── Modal ── */
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 1000; align-items: flex-start; justify-content: center; padding: 1.5rem 1rem; overflow-y: auto; }
+  .overlay.open { display: flex; }
+  .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 420px; box-shadow: 0 12px 40px rgba(0,0,0,0.25); overflow: hidden; margin: auto; }
+
+  .modal-hdr { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 0; }
+  .modal-sq-name { font-size: 17px; font-weight: 800; color: #2a1040; }
+  .modal-close { background: #f0ede8; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; color: #666; display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0; }
+  .modal-close:hover { background: #e4e0d8; }
+  .modal-hm-box { font-size: 13px; color: #444; line-height: 1.5; margin: 8px 16px 0; padding: 9px 12px; background: #f5f0ff; border-radius: 8px; }
+  .modal-hm-box strong { color: #5b3fa0; }
+  .modal-hm-none { background: #f0f8e8; color: #4a6a30; font-style: italic; }
+  .modal-book { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px 10px; }
+  .modal-book-cover-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; }
+  .modal-book-cover { width: 88px; height: 128px; border-radius: 6px; background: linear-gradient(170deg,#4a3a9a,#8164d8); display: flex; align-items: center; justify-content: center; font-size: 30px; overflow: hidden; color: rgba(255,255,255,0.7); }
+  .modal-book-cover img { width: 88px; height: 128px; object-fit: cover; display: block; border-radius: 6px; }
+  .modal-edit-cover-link { font-size: 10px; color: #7c5cbf; cursor: pointer; background: none; border: none; font-family: inherit; padding: 0; font-weight: 600; }
+  .modal-edit-cover-link:hover { text-decoration: underline; }
+  .modal-book-info { flex: 1; min-width: 0; }
+  .modal-book-title { font-family: 'Newsreader', Georgia, serif; font-size: 15px; font-weight: 700; color: #1a1a2e; line-height: 1.2; margin-bottom: 2px; }
+  .modal-book-title:hover { text-decoration: underline; text-underline-offset: 2px; }
+  .modal-book-author { font-size: 12px; color: #5b5570; }
+  .modal-book-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .modal-author-warn { font-size: 11px; color: #c0392b; margin-top: 4px; }
+  .hm-toggle-sm { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #444; margin-top: 8px; cursor: pointer; }
+  .hm-toggle-sm input { accent-color: #f4a93a; width: 14px; height: 14px; flex-shrink: 0; cursor: pointer; }
+  .modal-book-stars { display: flex; gap: 2px; margin-top: 6px; }
+
+  /* Book detail redesign */
+  .bd-header { padding: 16px 16px 14px; display: flex; gap: 14px; align-items: flex-start; }
+  .bd-cover { width: 68px; height: 98px; border-radius: 8px; flex-shrink: 0; background: linear-gradient(170deg, #4a3a9a, #8164d8); display: flex; align-items: center; justify-content: center; font-size: 26px; overflow: hidden; color: rgba(255,255,255,0.7); }
+  .bd-cover img { width: 68px; height: 98px; object-fit: cover; display: block; border-radius: 8px; }
+  .bd-header-info { flex: 1; min-width: 0; padding-top: 2px; }
+  .bd-title { font-family: 'Newsreader', Georgia, serif; font-size: 20px; font-weight: 700; color: #1a1a2e; line-height: 1.2; margin-bottom: 3px; }
+  .bd-author { font-size: 13px; color: #5b5570; }
+  .bd-sq-chip { display: inline-flex; align-items: center; gap: 5px; background: #f0edf8; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 600; color: #5b3fa0; margin-top: 7px; cursor: pointer; }
+  .bd-sq-chip:hover { background: #e4dcf5; }
+  .bd-not-assigned { font-size: 12px; color: #aaa; font-style: italic; margin-top: 6px; }
+  .bd-close { background: #f0ede8; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; color: #666; display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0; }
+  .bd-close:hover { background: #e4e0d8; }
+  .bd-status-sec { padding: 14px 16px; border-top: 1px solid #ebe9e4; }
+  .bd-hm-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #333; margin-top: 12px; }
+  .bd-hm-row input { accent-color: #f4a93a; width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
+  .bd-hm-row label { cursor: pointer; }
+  .bd-stars { display: flex; gap: 3px; margin-top: 10px; }
+  .bd-acc-item { border-top: 1px solid #ebe9e4; }
+  .bd-acc-hdr { display: flex; align-items: center; padding: 12px 16px; cursor: pointer; user-select: none; }
+  .bd-acc-hdr:hover { background: #faf9f7; }
+  .bd-acc-left { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #2a1040; }
+  .bd-acc-chevron { font-size: 14px; color: #999; transition: transform 0.15s; display: inline-block; }
+  .bd-acc-item.open .bd-acc-chevron { transform: rotate(90deg); }
+  .bd-acc-body { display: none; padding: 0 16px 14px; }
+  .bd-acc-item.open .bd-acc-body { display: block; }
+  .bd-acc-count { font-size: 11px; font-weight: 700; color: #fff; background: #5b3fa0; border-radius: 999px; padding: 1px 7px; }
+  .bd-mini-hint { font-size: 11px; color: #888; margin-bottom: 10px; line-height: 1.4; }
+  .bd-sec-label { font-size: 12px; font-weight: 700; color: #2a1040; margin: 18px 0 8px; padding-top: 14px; border-top: 1px solid #f0ede8; }
+  .sq-tag-list { border: 1px solid #ebe9e4; border-radius: 10px; overflow: hidden; max-height: 240px; overflow-y: auto; }
+  .sq-tag-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid #f0ede8; cursor: pointer; transition: background 0.1s; user-select: none; }
+  .sq-tag-row:last-child { border-bottom: none; }
+  .sq-tag-row:hover { background: #faf8ff; }
+  .sq-tag-row.on { background: #ede9f8; }
+  .sq-tag-row.sq-tag-locked { cursor: default; }
+  .sq-tag-row.sq-tag-locked:hover { background: #ede9f8; }
+  .sq-tag-check { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #ccc; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.1s; }
+  .sq-tag-row.on .sq-tag-check { background: #5b3fa0; border-color: #5b3fa0; }
+  .sq-tag-check-icon { display: none; }
+  .sq-tag-row.on .sq-tag-check-icon { display: block; }
+  .sq-tag-row-name { font-size: 13px; font-weight: 500; color: #444; flex: 1; }
+  .sq-tag-row.on .sq-tag-row-name { color: #3d1f80; font-weight: 600; }
+  .sq-tag-badge { font-size: 10px; font-weight: 700; color: #5b3fa0; background: #e6e1f5; border-radius: 999px; padding: 1px 7px; flex-shrink: 0; }
+  .sq-tag-btn { font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 8px; border: 1.5px solid #5b3fa0; color: #5b3fa0; background: #fff; cursor: pointer; font-family: inherit; flex-shrink: 0; appearance: none; -webkit-appearance: none; transition: background 0.12s; }
+  .sq-tag-btn:hover { background: #f5f0ff; }
+  .bd-footer { padding: 12px 16px; border-top: 1px solid #ebe9e4; display: flex; align-items: center; gap: 8px; }
+  .bd-btn-delete { background: none; border: none; color: #c0392b; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; padding: 8px 0; margin-right: auto; }
+  .bd-btn-delete:hover { text-decoration: underline; }
+  .bd-btn-done { padding: 9px 24px; background: #2c2456; color: #fff; border: none; border-radius: 999px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+  /* Square modal status button */
+  .btn-sm-read { padding: 5px 13px; font-size: 12px; font-weight: 700; border-radius: 999px; border: 1.5px solid #2abcf5; background: transparent; color: #1a8db8; cursor: pointer; white-space: nowrap; font-family: inherit; transition: background 0.12s; }
+  .btn-sm-read:hover { background: #eef9fe; }
+  .btn-sm-read.active { background: #eaf3de; color: #3b6d11; border-color: #639922; }
+  .btn-sm-read.active:hover { background: #d8edca; }
+  .modal-footer-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px 14px; }
+  .modal-btn-clear { background: none; border: none; font-size: 13px; font-weight: 600; color: #c0392b; cursor: pointer; font-family: inherit; padding: 6px 0; }
+  .modal-btn-clear:hover { text-decoration: underline; }
+  .modal-btn-edit { background: none; border: none; font-size: 13px; font-weight: 600; color: #5b3fa0; cursor: pointer; font-family: inherit; padding: 6px 0; }
+  .modal-btn-edit:hover { text-decoration: underline; }
+  .b-star { font-size: 18px; cursor: pointer; opacity: 0.25; transition: opacity 0.1s; }
+  .b-star.on { opacity: 1; color: #f59e0b; }
+  .b-star:hover { opacity: 0.6; }
+
+  /* Section divider */
+  .modal-sep { height: 1px; background: #ebe9e4; margin: 14px 0 0; }
+
+  /* Candidates */
+  .modal-sec { padding: 12px 16px; }
+  .modal-sec-hdr { font-size: 13px; font-weight: 700; color: #2a1040; margin-bottom: 12px; }
+
+  .cand-item { display: flex; align-items: center; gap: 10px; padding: 8px 8px; border-radius: 10px; transition: background 0.1s; }
+  .cand-item:not(.cand-used):hover { background: #f5f0ff; }
+  .cand-item.cand-used { background: #fffbf0; border: 1px solid #f0dfa0; }
+  .cand-item.cand-used:hover { background: #fff7e4; }
+  .cand-cover { width: 40px; height: 58px; border-radius: 4px; flex-shrink: 0; background: #e0ddd5; display: flex; align-items: center; justify-content: center; font-size: 14px; overflow: hidden; }
+  .cand-cover img { width: 40px; height: 58px; object-fit: cover; display: block; }
+  .cand-info { flex: 1; min-width: 0; }
+  .cand-title  { font-family: 'Newsreader', Georgia, serif; font-size: 15px; font-weight: 700; color: #1a1a2e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cand-author { font-size: 12px; color: #666; margin-top: 1px; }
+  .cand-used-in { font-size: 11px; font-weight: 600; color: #7a5500; background: #ffeea0; border-radius: 4px; padding: 2px 8px; margin-top: 4px; display: inline-block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .cand-used-in.read { color: #3b6d11; background: #e4f0d4; }
+  .cand-author-warn { font-size: 11px; font-weight: 600; color: #7a3a00; background: #fde0b0; border-radius: 4px; padding: 2px 8px; margin-top: 4px; display: inline-block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cand-assign { font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 8px; border: 1.5px solid #5b3fa0; color: #5b3fa0; background: #fff; cursor: pointer; flex-shrink: 0; }
+  .cand-assign:hover { background: #f5f0ff; }
+  .cand-remove { width: 26px; height: 26px; border-radius: 50%; border: none; background: none; color: #bbb; font-size: 16px; line-height: 1; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; padding: 0; font-family: inherit; }
+  .cand-remove:hover { background: #fdecea; color: #c0392b; }
+  .inline-tag-box { background: #f5f0ff; border-radius: 8px; padding: 10px 12px; margin: 2px 0 6px; }
+  .inline-tag-hdr { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 6px; }
+  .inline-tag-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; margin-bottom: 8px; }
+  .btn-save-tags { padding: 5px 14px; font-size: 12px; font-weight: 600; background: #5b3fa0; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+  .btn-save-tags:hover { background: #4a3290; }
+  .btn-delete-book { padding: 5px 10px; font-size: 12px; font-weight: 600; background: none; color: #c0392b; border: 1px solid #e8a8a0; border-radius: 6px; cursor: pointer; margin-left: auto; }
+  .btn-delete-book:hover { background: #fdf0ef; }
+  .inline-tag-actions { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  .inline-cover-row { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
+  .inline-cover-row label { font-size: 11px; color: #888; font-weight: 600; white-space: nowrap; }
+  .inline-cover-input { flex: 1; padding: 5px 8px; font-size: 12px; border: 1px solid #d0cdc5; border-radius: 6px; outline: none; }
+  .inline-cover-input:focus { border-color: #5b3fa0; }
+  .inline-cover-thumb { width: 24px; height: 36px; border-radius: 3px; object-fit: cover; display: none; border: 1px solid #d0cdc5; }
+  .inline-cover-thumb.show { display: block; }
+
+  .search-row { display: flex; gap: 6px; margin-bottom: 6px; }
+  .search-wrap { position: relative; flex: 1; }
+  .search-wrap input { width: 100%; padding: 9px 11px; font-size: 13px; border: 1px solid #d0cdc5; border-radius: 8px; outline: none; color: #1a1a1a; }
+  .search-wrap input:focus { border-color: #5b3fa0; }
+  .search-btn { padding: 9px 13px; background: #5b3fa0; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; flex-shrink: 0; }
+  .search-btn:hover { background: #4a3290; }
+  .spinner { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; border: 2px solid #e0ddd5; border-top-color: #5b3fa0; border-radius: 50%; animation: spin 0.6s linear infinite; display: none; }
+  .search-wrap.loading .spinner { display: block; }
+  @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+  .results { border: 1px solid #e0ddd5; border-radius: 8px; max-height: 240px; overflow-y: auto; margin-bottom: 6px; display: none; }
+  .results.show { display: block; }
+  .result-item { padding: 7px 10px; cursor: pointer; border-bottom: 1px solid #f0ede8; display: flex; align-items: center; gap: 9px; }
+  .result-item:last-child { border-bottom: none; }
+  .result-item:hover { background: #f5f0ff; }
+  .result-thumb { width: 30px; height: 44px; object-fit: cover; border-radius: 3px; flex-shrink: 0; }
+  .result-thumb-ph { width: 30px; height: 44px; background: #e8e6e0; border-radius: 3px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #bbb; }
+  .result-info { flex: 1; min-width: 0; }
+  .result-title  { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .result-author { font-size: 11px; color: #888; margin-top: 1px; }
+  .no-results { padding: 10px; font-size: 12px; color: #888; text-align: center; }
+
+  .sel-preview { display: none; padding: 8px 10px; background: #f5f0ff; border-radius: 8px; margin-bottom: 10px; }
+  .sel-preview.show { display: block; }
+  .sel-title  { font-size: 12px; font-weight: 700; color: #2a1040; }
+  .sel-author { font-size: 11px; color: #666; margin-top: 2px; }
+
+  .cover-picker-row { display: none; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+  .cover-picker-row.show { display: flex; }
+  .cover-picker-label { font-size: 11px; color: #888; font-weight: 600; }
+  .cover-picker-strip { display: flex; flex-wrap: wrap; gap: 6px; }
+  .cover-opt { width: 68px; height: 100px; border-radius: 6px; object-fit: cover; cursor: pointer; border: 2px solid transparent; opacity: 0.75; transition: opacity 0.15s, border-color 0.15s; flex-shrink: 0; }
+  .cover-opt:hover { opacity: 1; }
+  .cover-opt.sel { border-color: #5b3fa0; opacity: 1; box-shadow: 0 0 0 2px #c8b8f0; }
+
+  .qual-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #444; cursor: pointer; padding: 2px 0; }
+  .qual-item input { accent-color: #5b3fa0; flex-shrink: 0; cursor: pointer; }
+
+  .btn-io { background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.35); border-radius: 8px; color: #fff; font-size: 12px; font-weight: 600; padding: 6px 12px; cursor: pointer; transition: background 0.15s; }
+  .btn-io:hover { background: rgba(255,255,255,0.32); }
+  .btn-io-danger { background: transparent; border-color: rgba(220,100,90,0.45); color: #fff; margin-left: 16px; }
+  .btn-io-danger:hover { background: rgba(180,40,30,0.2); color: #fff; }
+
+  /* ── Action row (backup / restore / clear) ── */
+  .export-row { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 0.75rem; }
+
+  /* ── Pool toolbar ── */
+  .pool-toolbar { display: flex; gap: 10px; align-items: center; padding: 14px 16px 10px; }
+  .pool-search-pill { flex: 1; display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #e0ddd5; border-radius: 999px; padding: 8px 14px; transition: border-color 0.15s; }
+  .pool-search-pill:focus-within { border-color: #5b3fa0; }
+  .pool-search-pill .pool-search-icon { font-size: 13px; color: #aaa; }
+  .pool-search-pill .pool-search-input { border: none; outline: none; flex: 1; background: transparent; font-family: inherit; font-size: 13px; color: #1a1a1a; }
+  .pool-add-toggle { display: inline-flex; align-items: center; gap: 6px; border: none; background: #f4a93a; color: #2c2456; font-family: inherit; font-weight: 700; font-size: 13px; padding: 9px 16px; border-radius: 999px; cursor: pointer; white-space: nowrap; transition: transform 0.12s, filter 0.12s; flex-shrink: 0; }
+  .pool-add-toggle:hover { filter: brightness(1.07); transform: translateY(-1px); }
+
+  /* ── Add book sheet ── */
+  .sheet-scrim { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1010; }
+  .sheet-scrim.open { display: block; }
+  .add-sheet { position: fixed; left: 50%; top: 50%; z-index: 1011; background: #fff; border-radius: 20px; box-shadow: 0 8px 40px rgba(0,0,0,0.25); display: flex; flex-direction: column; max-height: 88vh; width: calc(100% - 32px); max-width: 420px; transform: translate(-50%, -50%) scale(0.95); opacity: 0; transition: transform 0.2s cubic-bezier(0.32,0.72,0,1), opacity 0.2s ease; pointer-events: none; }
+  .add-sheet.open { transform: translate(-50%, -50%) scale(1); opacity: 1; pointer-events: auto; }
+  .add-sheet-head { padding: 18px 20px 14px; border-bottom: 1px solid #f0ede8; flex-shrink: 0; position: relative; }
+  .add-sheet-head .sheet-mono { font-size: 12px; font-weight: 600; color: #777; margin-bottom: 4px; }
+  .add-sheet-head h2 { font-size: 20px; font-weight: 800; color: #2a1040; margin: 0; }
+  .add-sheet-head .sheet-close { position: absolute; top: 16px; right: 18px; background: #f0ede8; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; color: #666; display: flex; align-items: center; justify-content: center; }
+  .add-sheet-head .sheet-close:hover { background: #e4e0d8; }
+  .add-sheet-body { overflow-y: auto; padding: 16px 20px; flex: 1; }
+  .add-sheet-foot { padding: 12px 20px; border-top: 1px solid #f0ede8; display: flex; gap: 10px; justify-content: flex-end; flex-shrink: 0; }
+  .btn-sheet-cancel { padding: 10px 18px; background: transparent; color: #2c2456; border: 1px solid #e0ddd5; border-radius: 999px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: border-color 0.15s; }
+  .btn-sheet-cancel:hover { border-color: #5b3fa0; }
+  .btn-sheet-add { padding: 10px 24px; background: #f4a93a; color: #2c2456; border: none; border-radius: 999px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; transition: filter 0.15s, transform 0.12s; }
+  .btn-sheet-add:hover { filter: brightness(1.07); transform: translateY(-1px); }
+  .btn-sheet-add:disabled { opacity: 0.4; cursor: default; transform: none; filter: none; }
+  /* HM box inside add-sheet head */
+  .sheet-hm-box { font-size: 14px; line-height: 1.5; padding: 10px 13px; background: #f5f0ff; border-radius: 8px; color: #3a2a60; margin-top: 10px; }
+  .sheet-hm-box strong { color: #5b3fa0; }
+  .sheet-hm-none { background: #f0f8e8; color: #4a6a30; }
+
+  /* ── Pool overlay ── */
+  .pool-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 1000; align-items: flex-start; justify-content: center; padding: 1.5rem 1rem; overflow-y: auto; }
+  .pool-overlay.open { display: flex; }
+  .pool-modal { background: #fff; border-radius: 16px; width: 100%; max-width: 700px; box-shadow: 0 12px 40px rgba(0,0,0,0.25); margin: auto; overflow: hidden; }
+  .pool-hdr { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid #ebe9e4; }
+  .pool-title { font-size: 17px; font-weight: 800; color: #2a1040; }
+  .pool-close { background: #f0ede8; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; color: #666; display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0; }
+  .pool-close:hover { background: #e4e0d8; }
+  .pool-footer { padding: 12px 16px; border-top: 1px solid #f0ede8; display: flex; justify-content: flex-end; }
+  .btn-clear-pool { background: none; border: 1px solid #e8a8a0; border-radius: 7px; color: #c0392b; font-size: 12px; font-weight: 600; padding: 6px 12px; cursor: pointer; transition: background 0.15s; }
+  .btn-clear-pool:hover { background: #fdf0ef; }
+
+  /* ── Pool filter chips ── */
+  .pool-chips { display: flex; gap: 6px; padding: 0 16px 10px; flex-wrap: wrap; }
+  .pool-chip { padding: 5px 12px; border: 1px solid #e0ddd5; border-radius: 999px; background: #fff; font-size: 12px; font-weight: 600; cursor: pointer; color: #666; display: flex; align-items: center; gap: 5px; transition: border-color 0.15s, color 0.15s; }
+  .pool-chip:hover { border-color: #5b3fa0; color: #5b3fa0; }
+  .pool-chip.active { background: #2c2456; border-color: #2c2456; color: #fff; }
+  .pool-chip-ct { font-size: 11px; font-weight: 700; opacity: 0.7; }
+  .pool-chip.active .pool-chip-ct { opacity: 0.75; }
+
+  /* ── Pool book rows (design-spec bookrow) ── */
+  .pool-list { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 7px; }
+  .pool-row {
+    display: grid; grid-template-columns: 44px 1fr auto;
+    gap: 12px; align-items: center;
+    padding: 10px 12px;
+    background: #fff; border: 1px solid #ebe9e4; border-radius: 12px;
+    cursor: pointer; transition: border-color 0.15s, transform 0.1s;
+  }
+  .pool-row:hover { border-color: #f4a93a; transform: translateY(-1px); }
+  .pool-cover { width: 44px; height: 62px; border-radius: 4px; flex-shrink: 0; background: linear-gradient(170deg, #4a3a9a, #8164d8); display: flex; align-items: center; justify-content: center; font-size: 18px; overflow: hidden; color: rgba(255,255,255,0.7); }
+  .pool-cover img { width: 44px; height: 62px; object-fit: cover; display: block; }
+  .pool-cover.status-read     { background: linear-gradient(170deg, #3a6b10, #82b840); }
+  .pool-cover.status-assigned { background: linear-gradient(170deg, #2c7c8e, #4fb8d1); }
+  .pool-info { flex: 1; min-width: 0; }
+  .pool-book-title  { font-family: 'Newsreader', Georgia, serif; font-size: 16px; font-weight: 700; color: #1a1a2e; line-height: 1.15; }
+  .pool-book-author { font-size: 12px; color: #5b5570; margin-top: 2px; }
+  .pool-book-meta   { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; font-size: 11px; color: #888; }
+  .pool-meta-sq     { font-weight: 600; color: #2c2456; }
+  .pool-meta-sq::before { content: "▦ "; color: #f4a93a; }
+  .pool-meta-qual   { color: #5b3fa0; font-weight: 600; }
+  .pool-meta-qual::before { content: "✦ "; }
+  /* Status badge */
+  .statebadge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+  .statebadge .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .statebadge.s-unassigned { background: #efe9e1; color: #5b5570; }
+  .statebadge.s-unassigned .dot { background: #aaa; }
+  .statebadge.s-assigned   { background: #e6e1f5; color: #3d3375; }
+  .statebadge.s-assigned .dot   { background: #6a5fbf; }
+  .statebadge.s-read       { background: #f6e8c8; color: #6b4a08; }
+  .statebadge.s-read .dot       { background: #b07a1a; }
+  /* Pool empty state */
+  .pool-empty-state { padding: 40px 20px; text-align: center; color: #aaa; font-size: 14px; }
+  /* Pool stats/groups */
+  .pool-group-hdr { font-size: 10px; font-weight: 800; color: #5b3fa0; padding: 10px 16px 4px; }
+  .pool-book { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid #f0ede8; cursor: pointer; transition: background 0.1s; }
+  .pool-book:hover { background: #faf8ff; }
+  .pool-book:last-child { border-bottom: none; }
+
+  @media (max-width: 520px) { .grid { gap: 4px; } .sq-name { font-size: 10px; } .bingo-header h1 { font-size: 28px; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="bingo-header">
+    <h1>r/Fantasy 2026 Bingo Card</h1>
+    <p>Click any square to plan or track a book · Progress saved to browser</p>
+  </div>
+  <div class="stats">
+    <div class="stat" id="stat-planned" title="Click to see planned books"><div class="stat-num" id="s-planned">0</div><div class="stat-label">Planned</div></div>
+    <div class="stat" id="stat-read"    title="Click to see read books"><div class="stat-num" id="s-read">0</div><div class="stat-label">Read</div></div>
+    <div class="stat" id="stat-hm"      title="Click to see hard mode completions"><div class="stat-num" id="s-hm">0</div><div class="stat-label">Hard mode</div></div>
+    <div class="stat" id="stat-bingo"   title="Click to see bingo lines"><div class="stat-num" id="s-bingo">0</div><div class="stat-label">Bingos</div></div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-card-btn" onclick="switchTab('card')">✨ Bingo Card</button>
+    <button class="tab-btn inactive" id="tab-pool-btn" onclick="switchTab('pool')">📚 My Pool <span class="tab-count" id="pool-count">0</span></button>
+  </div>
+
+  <div id="tab-card-panel">
+    <div class="grid-wrap" id="grid-wrap">
+      <div class="grid" id="grid"></div>
+    </div>
+  </div>
+
+  <div id="tab-pool-panel" style="display:none">
+    <div class="inline-pool-wrap" id="inline-pool"></div>
+  </div>
+  <div class="export-row">
+    <button class="btn-io" id="btn-export-json" title="Download a backup of all your data">💾 Backup</button>
+    <button class="btn-io" id="btn-import-json" title="Restore from a backup file">📂 Restore</button>
+    <button class="btn-io btn-io-danger" id="btn-clear-board" title="Clear all square assignments (keeps your pool)">🗑 Clear board</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal" role="dialog" aria-modal="true"></div>
+</div>
+
+<div class="sheet-scrim" id="add-scrim"></div>
+<div class="add-sheet" id="add-sheet" role="dialog" aria-modal="true" aria-label="Add a book">
+  <div class="add-sheet-head" id="add-sheet-head"></div>
+  <div class="add-sheet-body" id="add-sheet-body"></div>
+  <div class="add-sheet-foot" id="add-sheet-foot"></div>
+</div>
+
+<div class="overlay" id="book-overlay">
+  <div class="modal" id="book-modal" role="dialog" aria-modal="true"></div>
+</div>
+
+<div class="pool-overlay" id="stats-overlay">
+  <div class="pool-modal" id="stats-modal" role="dialog" aria-modal="true"></div>
+</div>
+
+<script>
+const GB_KEY = 'AIzaSyCE4qdyQdBTvr6F691wtyhG-AeD0ZoOB8E';
+
+const SQUARES = [
+  { name: "Trans or Nonbinary Protagonist",   hm: "Set in a pre-modern time period" },
+  { name: "Judge a Book by Its Title",         hm: "Dive in without reading the blurb or any summaries" },
+  { name: "Translated",                        hm: "First translated into your language within the last 5 years" },
+  { name: "Small Press or Self-Published",     hm: "Under 100 ratings on Goodreads OR by an author from a marginalized group" },
+  { name: "Unusual Transportation",            hm: "Transportation is NOT combustion-powered or steam-powered" },
+  { name: "The Afterlife",                     hm: "Does NOT depict a \"Good Place\" vs \"Bad Place\" dichotomy" },
+  { name: "Game Changer",                      hm: "The protagonist bends or breaks the rules in some way" },
+  { name: "Vacation Spot",                     hm: "No hard mode — you deserve a break!" },
+  { name: "Five Short Stories",                hm: "Read an entire anthology or collection (at least 5 stories)" },
+  { name: "Older Protagonist (50+)",           hm: "No exceptional longevity or immortality (no elves, vampires, gods, etc.)" },
+  { name: "Duology — Part 1",                 hm: "By an author you haven't read before" },
+  { name: "r/Fantasy Book Club or Readalong", hm: "Partake in a current selection and participate in the discussion" },
+  { name: "Published in 2026",                hm: "It's the author's first published novel" },
+  { name: "Explorers or Rangers",              hm: "Has an animal companion" },
+  { name: "Duology — Part 2",                 hm: "A different duology than the one used for part 1" },
+  { name: "One-Word Title",                    hm: "The word is not a proper noun" },
+  { name: "Non-Human Protagonist",             hm: "No human POVs in the story" },
+  { name: "Middle Grade",                      hm: "Author is new to you" },
+  { name: "First Contact",                     hm: "Non-violent first contact" },
+  { name: "Murder Mystery",                    hm: "The main character is NOT a detective or private investigator" },
+  { name: "Cat Squasher",                      hm: "Over 900 pages" },
+  { name: "Feast Your Eyes on This",           hm: "Attempt making a dish from the story for yourself" },
+  { name: "Published in the 70s",              hm: "Written by a woman" },
+  { name: "Politics and Court Intrigue",       hm: "Prominent focus on politics at a city level or lower" },
+  { name: "Author of Color",                   hm: "Author does NOT live in the US, UK, Canada, Australia, or New Zealand" },
+];
+
+// ── Data ──────────────────────────────────────────────────────────────────────
+// pool: [{id, title, author, coverUrl, qualifies:[squareIdx,...]}]
+// asgn: {squareIdx: {bookId, status:'assigned'|'read', hm:bool, rating:int}}
+const POOL_KEY = 'rfb26_pool';
+const ASGN_KEY = 'rfb26_asgn';
+let pool = [];
+let asgn = {};
+try { pool = JSON.parse(localStorage.getItem(POOL_KEY) || '[]'); } catch {}
+try { asgn = JSON.parse(localStorage.getItem(ASGN_KEY) || '{}'); } catch {}
+
+function savePool() { localStorage.setItem(POOL_KEY, JSON.stringify(pool)); }
+function saveAsgn() { localStorage.setItem(ASGN_KEY, JSON.stringify(asgn)); }
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function el(tag, cls) { const d = document.createElement(tag); if (cls) d.className = cls; return d; }
+function coverPh() { const d = el('div','sq-cover-ph'); d.textContent = '📚'; return d; }
+function thumbPh() { const d = el('div','result-thumb-ph'); d.textContent = '📚'; return d; }
+function fixUrl(u) { return u ? u.replace('http://','https://').replace('&edge=curl','') : null; }
+function candidatesFor(idx) { return pool.filter(b => (b.qualifies||[]).includes(idx)); }
+function assignedSquareOf(bookId) {
+  const k = Object.keys(asgn).find(k => asgn[k].bookId === bookId);
+  return k !== undefined ? parseInt(k) : -1;
+}
+// Returns the square index where another book by the same author is assigned,
+// excluding the book itself (so moving it doesn't self-conflict) and the target square.
+// Exception: Duology Part 1 (10) and Part 2 (14) may share an author.
+const DUOLOGY_PAIR = new Set([10, 14]);
+function authorConflictAt(author, excludeBookId, excludeIdx) {
+  if (!author) return -1;
+  const norm = s => s.toLowerCase().trim();
+  const na = norm(author);
+  const k = Object.keys(asgn).find(k => {
+    const ki = parseInt(k);
+    if (ki === excludeIdx) return false;
+    if (asgn[k].bookId === excludeBookId) return false;
+    if (DUOLOGY_PAIR.has(ki) && DUOLOGY_PAIR.has(excludeIdx)) return false;
+    const b = pool.find(b => b.id === asgn[k].bookId);
+    return b?.author && norm(b.author) === na;
+  });
+  return k !== undefined ? parseInt(k) : -1;
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+function updateStats() {
+  const vals = Object.values(asgn);
+  document.getElementById('s-planned').textContent = vals.filter(a => a.status === 'assigned').length;
+  document.getElementById('s-read').textContent    = vals.filter(a => a.status === 'read').length;
+  document.getElementById('s-hm').textContent      = vals.filter(a => a.status === 'read' && a.hm).length;
+  document.getElementById('s-bingo').textContent   = countBingos();
+  document.getElementById('pool-count').textContent = pool.length;
+}
+function countBingos() {
+  const f = i => asgn[i]?.status === 'read';
+  let n = 0;
+  for (let r=0;r<5;r++) if([0,1,2,3,4].every(c=>f(r*5+c))) n++;
+  for (let c=0;c<5;c++) if([0,1,2,3,4].every(r=>f(r*5+c))) n++;
+  if ([0,6,12,18,24].every(f)) n++;
+  if ([4,8,12,16,20].every(f)) n++;
+  return n;
+}
+
+// ── Grid ──────────────────────────────────────────────────────────────────────
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+
+  // Build reverse index once: squareIdx → qualifying books (O(pool × qualifies))
+  // instead of calling candidatesFor(i) 25× (each pool.filter = O(pool))
+  const candsBySquare = {};
+  pool.forEach(b => (b.qualifies || []).forEach(qi => {
+    (candsBySquare[qi] = candsBySquare[qi] || []).push(b);
+  }));
+
+  SQUARES.forEach((sq, i) => {
+    const a      = asgn[i] || null;
+    const book   = a ? pool.find(b => b.id === a.bookId) : null;
+    const status = a ? a.status : 'empty';
+    const color  = i % 2 === 0 ? 'gold' : 'cream';
+    const cands  = candsBySquare[i] || [];
+
+    const div = el('div', `square ${color}${status !== 'empty' ? ' '+status : ''}`);
+    div.setAttribute('role','button'); div.setAttribute('tabindex','0');
+    div.onclick   = () => openModal(i);
+    div.onkeydown = e => { if (e.key==='Enter'||e.key===' '){e.preventDefault();openModal(i);} };
+
+    const cover = el('div', 'sq-cover');
+    if (book?.coverUrl) {
+      const img = el('img'); img.src = book.coverUrl; img.alt = book.title;
+      img.onerror = () => { img.remove(); cover.appendChild(coverPh()); };
+      cover.appendChild(img);
+    } else {
+      cover.appendChild(coverPh());
+      if (!a) {
+        const hint = el('div', 'sq-cover-hint'); hint.textContent = '+ Add a book';
+        cover.appendChild(hint);
+      }
+    }
+
+    // Options badge on cover
+    if (cands.length > 1 || (!a && cands.length === 1)) {
+      const badge = el('div','sq-cand');
+      badge.textContent = `${cands.length} option${cands.length>1?'s':''}`;
+      cover.appendChild(badge);
+    }
+    if (a?.hm && status === 'read') {
+      const hm = el('div','sq-hm'); hm.textContent = 'HM'; cover.appendChild(hm);
+    }
+    div.appendChild(cover);
+
+    const body = el('div','sq-body');
+    const name = el('div','sq-name'); name.textContent = sq.name; body.appendChild(name);
+
+    // Conflict stamp across cover
+    if (book?.author) {
+      const conflictAt = authorConflictAt(book.author, book.id, i);
+      if (conflictAt >= 0) {
+        div.classList.add('author-conflict');
+        const badge = el('div','sq-conflict'); badge.textContent = '⚠ conflict';
+        cover.appendChild(badge);
+      }
+    }
+
+    if (status === 'read') {
+      const stars = el('div','sq-stars');
+      stars.setAttribute('role','group'); stars.setAttribute('aria-label','Rating');
+      for (let k=1;k<=5;k++) {
+        const s = el('span',`sq-star${k<=(a.rating||0)?' on':''}`);
+        s.textContent = '★'; s.setAttribute('role','button'); s.setAttribute('aria-label',`${k} star${k>1?'s':''}`);
+        s.onclick = e => {
+          e.stopPropagation();
+          asgn[i].rating = k; saveAsgn();
+          stars.querySelectorAll('.sq-star').forEach((st,si) => st.classList.toggle('on', si < k));
+          updateStats();
+        };
+        stars.appendChild(s);
+      }
+      body.appendChild(stars);
+    }
+    div.appendChild(body);
+    grid.appendChild(div);
+  });
+  updateStats();
+}
+
+// ── Inline tag/cover editor (shared by assigned-book and candidate editors) ───
+// Returns a fully-built tagBox element; caller appends it to the DOM.
+// onSave(coverUrl, qualifiesArray) and onDelete() are callbacks with the
+// book-specific save/delete logic that differs between the two call sites.
+function buildInlineTagEditor(targetBook, { margin, onSave, onDelete }) {
+  const tagBox = el('div', 'inline-tag-box');
+  if (margin) tagBox.style.margin = margin;
+
+  const coverHdr = el('div', 'inline-tag-hdr'); coverHdr.textContent = 'Cover:'; tagBox.appendChild(coverHdr);
+  const icRow = el('div', 'inline-cover-row');
+  const icLbl = el('label'); icLbl.textContent = 'URL:'; icRow.appendChild(icLbl);
+  const icIn = el('input', 'inline-cover-input'); icIn.type = 'url';
+  icIn.value = targetBook.coverUrl || ''; icIn.placeholder = 'Paste image URL'; icRow.appendChild(icIn);
+  const icThumb = el('img', 'inline-cover-thumb' + (targetBook.coverUrl ? ' show' : ''));
+  icThumb.src = targetBook.coverUrl || ''; icThumb.alt = '';
+  icIn.addEventListener('input', () => {
+    const u = icIn.value.trim();
+    if (u) { icThumb.src = u; icThumb.className = 'inline-cover-thumb show'; icThumb.onerror = () => icThumb.classList.remove('show'); }
+    else   { icThumb.className = 'inline-cover-thumb'; }
+  });
+  icRow.appendChild(icThumb); tagBox.appendChild(icRow);
+
+  const tagHdr = el('div', 'inline-tag-hdr'); tagHdr.textContent = 'Qualifies for:'; tagBox.appendChild(tagHdr);
+  const tagGrid = el('div', 'inline-tag-grid');
+  SQUARES.forEach((s, si) => {
+    const lbl = el('label', 'qual-item');
+    const cb  = el('input'); cb.type = 'checkbox'; cb.dataset.tqi = si;
+    cb.checked = (targetBook.qualifies || []).includes(si);
+    lbl.appendChild(cb); lbl.appendChild(document.createTextNode(s.name));
+    tagGrid.appendChild(lbl);
+  });
+  tagBox.appendChild(tagGrid);
+
+  const actRow = el('div', 'inline-tag-actions');
+  const saveBtn = el('button', 'btn-save-tags'); saveBtn.textContent = 'Save';
+  saveBtn.onclick = () => onSave(
+    icIn.value.trim() || null,
+    [...tagBox.querySelectorAll('input[data-tqi]:checked')].map(cb => parseInt(cb.dataset.tqi))
+  );
+  const delBtn = el('button', 'btn-delete-book'); delBtn.textContent = '🗑 Delete book';
+  delBtn.onclick = onDelete;
+  actRow.appendChild(saveBtn); actRow.appendChild(delBtn);
+  tagBox.appendChild(actRow);
+  return tagBox;
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+let activeIdx          = null;
+let editingTagsBookId  = null; // book whose qualifying squares are being edited
+const cache            = {};
+
+function openModal(idx) {
+  // Empty square with no candidates → skip modal, go straight to add-book sheet
+  const hasCandidates = pool.some(b => (b.qualifies || []).includes(idx));
+  if (!asgn[idx] && !hasCandidates) { openAddSheet(idx); return; }
+  activeIdx         = idx;
+  editingTagsBookId = null;
+  buildModal();
+  document.getElementById('overlay').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+  activeIdx = null;
+}
+
+document.getElementById('overlay').addEventListener('click', e => { if (e.target.id==='overlay') closeModal(); });
+
+function buildModal() {
+  const idx    = activeIdx;
+  const sq     = SQUARES[idx];
+  const a      = asgn[idx] || null;
+  const book   = a ? pool.find(b => b.id === a.bookId) : null;
+  const cands  = candidatesFor(idx);
+  const modal  = document.getElementById('modal');
+  const overlay = document.getElementById('overlay');
+  const savedScroll = overlay.scrollTop;
+  modal.innerHTML = '';
+
+  // ── Header
+  const hdr = el('div','modal-hdr');
+  const t   = el('div','modal-sq-name'); t.textContent = sq.name;
+  const x   = el('button','modal-close'); x.textContent = '✕'; x.setAttribute('aria-label','Close'); x.onclick = closeModal;
+  hdr.appendChild(t); hdr.appendChild(x);
+  modal.appendChild(hdr);
+
+  if (sq.hm) {
+    const hmBox = el('div', sq.hm.startsWith('No hard mode') ? 'modal-hm-box modal-hm-none' : 'modal-hm-box');
+    hmBox.innerHTML = sq.hm.startsWith('No hard mode')
+      ? `<em>${esc(sq.hm)}</em>`
+      : `<strong>Hard mode:</strong> ${esc(sq.hm)}`;
+    modal.appendChild(hmBox);
+  }
+
+  // ── Assigned book card (cover + title + author only)
+  if (book) {
+    const card = el('div','modal-book');
+
+    const coverWrap = el('div','modal-book-cover-wrap');
+    const coverEl = el('div','modal-book-cover');
+    if (book.coverUrl) {
+      const img = el('img'); img.src = book.coverUrl; img.alt = book.title;
+      img.onerror = () => { coverEl.textContent = '📚'; };
+      coverEl.appendChild(img);
+    } else { coverEl.textContent = '📚'; }
+    coverWrap.appendChild(coverEl);
+    const ecLink = el('button','modal-edit-cover-link'); ecLink.textContent = 'Edit cover';
+    ecLink.onclick = () => { closeModal(); openBookDetail(book.id); };
+    coverWrap.appendChild(ecLink);
+    card.appendChild(coverWrap);
+
+    const info = el('div','modal-book-info');
+    const titleEl = el('div','modal-book-title'); titleEl.textContent = book.title;
+    titleEl.title = 'View book details'; titleEl.style.cursor = 'pointer';
+    titleEl.onclick = () => { closeModal(); openBookDetail(book.id); };
+    info.appendChild(titleEl);
+    if (book.author) { const au = el('div','modal-book-author'); au.textContent = book.author; info.appendChild(au); }
+
+    const cardAuthorAt = authorConflictAt(book.author, book.id, idx);
+    if (cardAuthorAt >= 0) {
+      const aw = el('div','modal-author-warn');
+      aw.textContent = `⚠ Same author as "${SQUARES[cardAuthorAt].name}"`;
+      info.appendChild(aw);
+    }
+
+    // Status button + hard mode + stars
+    const actions = el('div','modal-book-actions');
+    if (a.status === 'read') {
+      const rb = el('button','btn-sm-read active'); rb.textContent = '✓ Read';
+      rb.onclick = () => { asgn[idx].status = 'assigned'; saveAsgn(); buildModal(); renderGrid(); };
+      actions.appendChild(rb);
+    } else {
+      const rb = el('button','btn-sm-read'); rb.textContent = '✓ Mark as Read';
+      rb.onclick = () => { asgn[idx].status = 'read'; saveAsgn(); buildModal(); renderGrid(); };
+      actions.appendChild(rb);
+    }
+    info.appendChild(actions);
+
+    if (a.status === 'read') {
+      const hmLabel = el('label','hm-toggle-sm');
+      const hmCb = el('input'); hmCb.type = 'checkbox'; hmCb.checked = !!a.hm;
+      hmCb.onchange = () => { asgn[idx].hm = hmCb.checked; saveAsgn(); renderGrid(); };
+      hmLabel.appendChild(hmCb);
+      hmLabel.appendChild(document.createTextNode(' Completed hard mode'));
+      info.appendChild(hmLabel);
+
+      const stars = el('div','modal-book-stars');
+      stars.setAttribute('role','group'); stars.setAttribute('aria-label','Rating');
+      for (let k=1;k<=5;k++) {
+        const s = el('span',`b-star${k<=(a.rating||0)?' on':''}`);
+        s.textContent = '★'; s.setAttribute('role','button'); s.setAttribute('aria-label',`${k} star${k>1?'s':''}`);
+        s.onclick = () => { asgn[idx].rating = k; saveAsgn(); buildModal(); renderGrid(); };
+        stars.appendChild(s);
+      }
+      info.appendChild(stars);
+    }
+
+    card.appendChild(info);
+    modal.appendChild(card);
+  }
+
+  // ── Candidates (switch section — only shown when candidates exist)
+  const displayCands = book ? cands.filter(b => b.id !== a.bookId) : cands;
+  if (displayCands.length) {
+    let container;
+    if (book) {
+      // Collapsed accordion when a book is already assigned
+      const accItem = el('div', 'bd-acc-item');
+      const accHdr  = el('div', 'bd-acc-hdr');
+      accHdr.onclick = () => accItem.classList.toggle('open');
+      const accLeft = el('div', 'bd-acc-left');
+      const chevron = el('span', 'bd-acc-chevron'); chevron.textContent = '▸'; accLeft.appendChild(chevron);
+      const lbl = el('span'); lbl.textContent = 'Other books that fit this square'; accLeft.appendChild(lbl);
+      const bdg = el('span', 'bd-acc-count'); bdg.textContent = displayCands.length; accLeft.appendChild(bdg);
+      accHdr.appendChild(accLeft);
+      container = el('div', 'bd-acc-body');
+      accItem.appendChild(accHdr); accItem.appendChild(container);
+      modal.appendChild(accItem);
+    } else {
+      modal.appendChild(el('div','modal-sep'));
+      const sec = el('div','modal-sec');
+      const secHdr = el('div','modal-sec-hdr'); secHdr.textContent = 'Assign a book'; sec.appendChild(secHdr);
+      modal.appendChild(sec);
+      container = sec;
+    }
+    displayCands.forEach(b => {
+      const usedAt = assignedSquareOf(b.id);
+      const isUsed = usedAt >= 0 && usedAt !== idx;
+
+      const item = el('div', `cand-item${isUsed?' cand-used':''}`);
+
+      const cv = el('div','cand-cover');
+      if (b.coverUrl) {
+        const img = el('img'); img.src = b.coverUrl; img.alt = b.title;
+        img.onerror = () => { cv.textContent = '📚'; };
+        cv.appendChild(img);
+      } else { cv.textContent = '📚'; }
+      item.appendChild(cv);
+
+      const ci = el('div','cand-info');
+      const ct = el('div','cand-title'); ct.textContent = b.title; ci.appendChild(ct);
+      if (b.author) { const ca = el('div','cand-author'); ca.textContent = b.author; ci.appendChild(ca); }
+
+      const candAuthorAt = authorConflictAt(b.author, b.id, idx);
+      if (candAuthorAt >= 0) {
+        const aw = el('div','cand-author-warn');
+        aw.textContent = `⚠ Author used for "${SQUARES[candAuthorAt].name}"`;
+        ci.appendChild(aw);
+      }
+
+      const removeBtn = el('button', 'cand-remove');
+      removeBtn.textContent = '×';
+      removeBtn.title = 'Remove from this square';
+      removeBtn.onclick = (e) => {
+        e.stopPropagation();
+        b.qualifies = (b.qualifies || []).filter(q => q !== idx);
+        savePool(); buildModal(); renderGrid(); buildInlinePool();
+      };
+
+      if (isUsed) {
+        const isReadElsewhere = asgn[usedAt]?.status === 'read';
+        const badge = el('div', `cand-used-in${isReadElsewhere ? ' read' : ''}`);
+        badge.textContent = isReadElsewhere
+          ? `✓ Read for "${SQUARES[usedAt].name}"`
+          : `Planned for "${SQUARES[usedAt].name}"`;
+        badge.title = SQUARES[usedAt].name;
+        ci.appendChild(badge);
+        item.appendChild(ci);
+        const btn = el('button','cand-assign'); btn.textContent = 'Assign';
+        btn.onclick = () => {
+          const prev = asgn[usedAt] || {};
+          delete asgn[usedAt];
+          asgn[idx] = { bookId: b.id, status: prev.status || 'assigned', hm: prev.hm || false, rating: prev.rating || 0 };
+          saveAsgn(); buildModal(); renderGrid();
+        };
+        item.appendChild(btn);
+        item.appendChild(removeBtn);
+      } else {
+        item.appendChild(ci);
+        const btn = el('button','cand-assign'); btn.textContent = 'Assign';
+        btn.onclick = () => {
+          asgn[idx] = { bookId: b.id, status: 'assigned', hm: false, rating: asgn[idx]?.rating ?? 0 };
+          saveAsgn(); buildModal(); renderGrid();
+        };
+        item.appendChild(btn);
+        item.appendChild(removeBtn);
+      }
+
+      container.appendChild(item);
+
+      // Inline editor (only in empty-square / pick-a-book flow)
+      if (!book && editingTagsBookId === b.id) {
+        container.appendChild(buildInlineTagEditor(b, {
+          onSave: (coverUrl, qualifies) => {
+            b.coverUrl  = coverUrl;
+            b.qualifies = qualifies;
+            const at = assignedSquareOf(b.id);
+            if (at >= 0 && !b.qualifies.includes(at)) { delete asgn[at]; saveAsgn(); }
+            savePool(); editingTagsBookId = null; buildModal(); renderGrid();
+          },
+          onDelete: () => {
+            const at = assignedSquareOf(b.id);
+            const msg = at >= 0
+              ? `Remove "${b.title}" from your pool? It will also be unassigned from "${SQUARES[at].name}."`
+              : `Remove "${b.title}" from your pool?`;
+            if (!confirm(msg)) return;
+            if (at >= 0) { delete asgn[at]; saveAsgn(); }
+            pool = pool.filter(x => x.id !== b.id);
+            savePool(); editingTagsBookId = null; buildModal(); renderGrid();
+          },
+        }));
+      }
+    });
+  }
+
+  // ── Footer
+  if (book) {
+    // Assigned: Clear square only (Add book option moved into accordion)
+    modal.appendChild(el('div','modal-sep'));
+    const footer = el('div','modal-footer-row');
+    const clearBtn = el('button','modal-btn-clear'); clearBtn.textContent = 'Clear square';
+    clearBtn.onclick = () => {
+      if (!confirm(`Clear "${book.title}" from this square? It will stay in your pool.`)) return;
+      delete asgn[idx]; saveAsgn(); buildModal(); renderGrid();
+    };
+    footer.appendChild(clearBtn);
+    const editBtn = el('button','modal-btn-edit'); editBtn.textContent = 'Add book option';
+    editBtn.onclick = () => { closeModal(); openAddSheet(idx); };
+    footer.appendChild(editBtn);
+    modal.appendChild(footer);
+  } else if (!displayCands.length) {
+    // Empty square, no candidates: prominent Add a book button
+    modal.appendChild(el('div','modal-sep'));
+    const addFooter = el('div'); addFooter.style.cssText = 'padding:12px 16px;';
+    const addBtn = el('button','pool-add-toggle'); addBtn.style.width = '100%';
+    addBtn.textContent = '＋ Add a book';
+    addBtn.onclick = () => { closeModal(); openAddSheet(idx); };
+    addFooter.appendChild(addBtn);
+    modal.appendChild(addFooter);
+  } else {
+    // Has candidates but nothing assigned yet: offer adding another book
+    modal.appendChild(el('div','modal-sep'));
+    const footer = el('div','modal-footer-row'); footer.style.justifyContent = 'flex-end';
+    const addBtn = el('button','modal-btn-edit'); addBtn.textContent = 'Add book option';
+    addBtn.onclick = () => { closeModal(); openAddSheet(idx); };
+    footer.appendChild(addBtn);
+    modal.appendChild(footer);
+  }
+
+  // Restore overlay scroll position after DOM rebuild
+  requestAnimationFrame(() => { overlay.scrollTop = savedScroll; });
+}
+
+function showToast(msg, bg = '#3b6d11') {
+  const toast = document.createElement('div');
+  toast.style.cssText = `position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:${bg};color:#fff;padding:10px 22px;border-radius:20px;font-size:13px;font-weight:600;z-index:200;box-shadow:0 4px 14px rgba(0,0,0,0.22);pointer-events:none;transition:opacity 0.4s;`;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 420); }, 2000);
+}
+
+// ── Book search ───────────────────────────────────────────────────────────────
+function gbUrl(q, n=8) { return `https://www.googleapis.com/books/v1/volumes?key=${GB_KEY}&q=${encodeURIComponent(q)}&maxResults=${n}&printType=books`; }
+
+// Static nonfiction-filter constants — hoisted so they compile once, not per search call.
+// Only block on hard nonfiction signals — default allow so indie/self-pub fiction without
+// genre tags (e.g. LitRPG, small press) still passes through.
+// "science" omitted intentionally — would catch "Science fiction".
+const NONFICTION_RE   = /\b(biography|nonfiction|non-fiction|autobiography|memoir|textbook|juvenile nonfiction)\b/i;
+const TITLE_BLOCK_RE  = /\b(annual report|report of the|proceedings|superintendent|geographical|handbook|journal of|transactions of|letter from|secretary of|dictionary|encyclop|encyclopedia|atlas|almanac|treatise|dissertation|thesis|vol\.\s*\d|volume \d|issue \d|bulletin|gazette|survey of|analysis of|study of|review of|assessment of|management of|principles of|elements of|fundamentals of|foundations of|history of|system index|research index|information system|literary supplement|literary review|literary journal)\b/i;
+const ORG_AUTHOR_RE   = /\(organization\)|\b(association|society|committee|institution|university|college|department|bureau|congress)\b/i;
+const isNonfiction = (title, subjects, author = '') =>
+  TITLE_BLOCK_RE.test(title) || NONFICTION_RE.test(subjects) || ORG_AUTHOR_RE.test(author);
+
+async function searchBooks(q) {
+  const key = q.toLowerCase().trim();
+  if (cache[key]) return cache[key];
+
+  // Run both APIs in parallel so we never skip GB covers when OL returns coverless results
+  const [olResult, gbResult] = await Promise.allSettled([
+    fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(q)}&fields=title,author_name,cover_i,key,subject&limit=20`)
+      .then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch(gbUrl(q))
+      .then(r => r.ok ? r.json() : null).catch(() => null),
+  ]);
+
+  const norm = s => s.toLowerCase().trim().replace(/[''‚‛]/g, "'").replace(/[""„‟]/g, '"');
+
+  // Group OL results by title, collecting ALL cover_i values so the cover picker has real choices
+  const olBooks = (() => {
+    const data = olResult.value;
+    if (!data) return [];
+    const map = new Map();
+    (data.docs||[]).filter(d => d.title && !isNonfiction(d.title, (d.subject||[]).join(' '), (d.author_name||[])[0]||'')).forEach(d => {
+      const key = norm(d.title);
+      if (!map.has(key)) {
+        map.set(key, {
+          title: d.title, author: (d.author_name||[])[0]||'',
+          thumb: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-S.jpg` : null,
+          cover: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg` : null,
+          covers: d.cover_i ? [`https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg`] : [],
+          olWorkKey: d.key || null,
+        });
+      } else if (d.cover_i) {
+        const entry = map.get(key);
+        const url = `https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg`;
+        if (!entry.covers.includes(url)) entry.covers.push(url);
+        if (!entry.cover) { entry.cover = url; entry.thumb = `https://covers.openlibrary.org/b/id/${d.cover_i}-S.jpg`; }
+      }
+    });
+    return [...map.values()];
+  })();
+
+  const gbBooks = (() => {
+    const data = gbResult.value;
+    if (!data) return [];
+    return (data.items||[]).flatMap(item => {
+      const info = item.volumeInfo||{};
+      if (!info.authors?.length) return []; // periodicals/journals rarely have a named author
+      if (isNonfiction(info.title||'', (info.categories||[]).join(' '), info.authors[0])) return [];
+      const t = fixUrl((info.imageLinks||{}).smallThumbnail);
+      const c = fixUrl((info.imageLinks||{}).thumbnail)||t;
+      return [{ title: info.title||'', author: (info.authors||[])[0]||'', thumb: t, cover: c, covers: c ? [c] : [] }];
+    });
+  })();
+
+  // Merge: OL is base; borrow GB cover for coverless OL entries (and add GB cover as extra option);
+  // then append any GB-only titles not already in OL results.
+  // Title matching is fuzzy: "Mistborn: The Final Empire" matches "The Final Empire"
+  // Substring match only when the shorter title is at least half the longer — prevents
+  // "Dominion of Blades" from merging into "The Hobgoblin Riot: Dominion of Blades Book 2".
+  const titlesMatch = (a, b) => {
+    const na = norm(a), nb = norm(b);
+    if (na === nb) return true;
+    const ratio = Math.min(na.length, nb.length) / Math.max(na.length, nb.length);
+    return ratio >= 0.5 && (na.includes(nb) || nb.includes(na));
+  };
+  const merged = olBooks.map(b => {
+    const gb = gbBooks.find(g => titlesMatch(g.title, b.title) && g.cover);
+    if (!b.cover) return gb ? { ...b, thumb: gb.thumb, cover: gb.cover, covers: [...b.covers, ...gb.covers] } : b;
+    // OL has a cover — add GB's as an extra option if different
+    const extra = gb?.cover && !b.covers.includes(gb.cover) ? [gb.cover] : [];
+    return extra.length ? { ...b, covers: [...b.covers, ...extra] } : b;
+  });
+  gbBooks.forEach(g => { if (!olBooks.some(b => titlesMatch(g.title, b.title))) merged.push(g); });
+
+  if (merged.length) { cache[key] = merged; return merged; }
+  // Distinguish: both APIs returned null (network failure) vs both returned empty (genuine no results)
+  return (olResult.value === null && gbResult.value === null) ? null : [];
+}
+
+// ── JSON backup / restore ─────────────────────────────────────────────────────
+function exportData() {
+  const json = JSON.stringify({ pool, asgn }, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.download = `rfantasy_bingo_2026_backup_${new Date().toISOString().slice(0,10)}.json`;
+  link.href = URL.createObjectURL(blob);
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function importData() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json,application/json';
+  input.onchange = e => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (!Array.isArray(data.pool) || typeof data.asgn !== 'object' || data.asgn === null) throw new Error();
+        const validPool = data.pool.every(b =>
+          b && typeof b.id === 'string' && typeof b.title === 'string' &&
+          Array.isArray(b.qualifies) && b.qualifies.every(q => Number.isInteger(q) && q >= 0 && q < 25)
+        );
+        const validAsgn = Object.entries(data.asgn).every(([k, v]) => {
+          const ki = parseInt(k);
+          return Number.isInteger(ki) && ki >= 0 && ki < 25 &&
+            v && typeof v.bookId === 'string' && (v.status === 'assigned' || v.status === 'read');
+        });
+        if (!validPool || !validAsgn) throw new Error();
+        if (!confirm('Replace all your current data with this backup?')) return;
+        pool = data.pool; asgn = data.asgn;
+        savePool(); saveAsgn(); renderGrid(); buildInlinePool(); updateStats();
+      } catch {
+        alert('Could not read file — make sure it\'s a valid bingo backup.');
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+document.getElementById('btn-export-json').onclick = exportData;
+document.getElementById('btn-import-json').onclick = importData;
+document.getElementById('btn-clear-board').onclick = () => {
+  if (!confirm('Clear all square assignments? Your pool of books will be kept.')) return;
+  asgn = {}; saveAsgn(); renderGrid();
+};
+
+// ── Pool tab ──────────────────────────────────────────────────────────────────
+let poolFilter   = 'all';   // 'all' | 'unassigned' | 'planned' | 'read'
+let poolQuery    = '';
+let poolDetailId = null;
+let poolDetailAccordionOpen = null; // null = uninitialized; Set of open labels on rebuild
+
+function switchTab(tab) {
+  document.getElementById('tab-card-panel').style.display = tab === 'card' ? '' : 'none';
+  document.getElementById('tab-pool-panel').style.display = tab === 'pool'  ? '' : 'none';
+  document.getElementById('tab-card-btn').className = 'tab-btn ' + (tab === 'card' ? 'active' : 'inactive');
+  document.getElementById('tab-pool-btn').className = 'tab-btn ' + (tab === 'pool' ? 'active' : 'inactive');
+  document.getElementById('btn-clear-board').style.display = tab === 'card' ? '' : 'none';
+  if (tab === 'pool') buildInlinePool();
+}
+
+function poolCounts() {
+  const bookToSquare = {};
+  Object.entries(asgn).forEach(([k, v]) => { bookToSquare[v.bookId] = parseInt(k); });
+  // Apply search query so chip counts match visible results
+  let list = pool;
+  if (poolQuery.trim()) {
+    const q = poolQuery.toLowerCase();
+    list = pool.filter(b => b.title.toLowerCase().includes(q) || (b.author||'').toLowerCase().includes(q));
+  }
+  let unassigned = 0, planned = 0, read = 0;
+  list.forEach(b => {
+    const at = bookToSquare[b.id] ?? -1;
+    if (at < 0) { unassigned++; return; }
+    const st = asgn[at]?.status;
+    if (st === 'assigned') planned++;
+    else if (st === 'read') read++;
+    else unassigned++;
+  });
+  return { all: list.length, unassigned, planned, read };
+}
+
+function getFilteredPool() {
+  // Build bookId→squareIdx map once rather than calling assignedSquareOf per book
+  const bookToSquare = {};
+  Object.entries(asgn).forEach(([k, v]) => { bookToSquare[v.bookId] = parseInt(k); });
+
+  let list = [...pool];
+  if (poolFilter !== 'all') {
+    list = list.filter(b => {
+      const at = bookToSquare[b.id] ?? -1;
+      if (poolFilter === 'unassigned') return at < 0;
+      if (at < 0) return false;
+      const st = asgn[at]?.status;
+      return poolFilter === 'planned' ? st === 'assigned' : st === 'read';
+    });
+  }
+  if (poolQuery.trim()) {
+    const q = poolQuery.toLowerCase();
+    list = list.filter(b => b.title.toLowerCase().includes(q) || (b.author||'').toLowerCase().includes(q));
+  }
+  return list;
+}
+
+function renderPoolList(listEl) {
+  const filtered = getFilteredPool();
+  if (!filtered.length) {
+    const empty = el('div', 'pool-empty-state');
+    empty.textContent = pool.length === 0 ? 'Add books to start planning your bingo — assign them to squares on the card.' : 'No books match this filter.';
+    listEl.appendChild(empty); return;
+  }
+  // Pre-compute assignment map for the list render pass
+  const bookToSquare = {};
+  Object.entries(asgn).forEach(([k, v]) => { bookToSquare[v.bookId] = parseInt(k); });
+  filtered.forEach(b => {
+    const assignedAt = bookToSquare[b.id] ?? -1;
+    const status     = assignedAt >= 0 ? (asgn[assignedAt]?.status || 'assigned') : null;
+    const statusKey  = status === 'read' ? 'read' : status === 'assigned' ? 'assigned' : 'unassigned';
+
+    const row = el('div', 'pool-row');
+    row.onclick = () => openBookDetail(b.id);
+
+    // Cover with status-tinted gradient placeholder
+    const cov = el('div', `pool-cover status-${statusKey}`);
+    if (b.coverUrl) {
+      const img = el('img'); img.src = b.coverUrl; img.alt = b.title;
+      img.onerror = () => { img.remove(); cov.textContent = '📚'; };
+      cov.appendChild(img);
+    } else { cov.textContent = '📚'; }
+    row.appendChild(cov);
+
+    // Info: title (Newsreader) + author + meta
+    const info = el('div', 'pool-info');
+    const titleEl = el('div', 'pool-book-title'); titleEl.textContent = b.title; info.appendChild(titleEl);
+    if (b.author) { const au = el('div', 'pool-book-author'); au.textContent = b.author; info.appendChild(au); }
+    const meta = el('div', 'pool-book-meta');
+    if (assignedAt >= 0) {
+      const sqSpan = el('span', 'pool-meta-sq'); sqSpan.textContent = SQUARES[assignedAt].name; meta.appendChild(sqSpan);
+    } else {
+      const noSq = el('span'); noSq.textContent = 'Not assigned'; noSq.style.fontStyle = 'italic'; meta.appendChild(noSq);
+    }
+    const qualN = (b.qualifies || []).length;
+    if (qualN > 0) {
+      const qSpan = el('span', 'pool-meta-qual'); qSpan.textContent = `Qualifies for ${qualN} square${qualN === 1 ? '' : 's'}`; meta.appendChild(qSpan);
+    }
+    if (assignedAt >= 0 && b.author) {
+      const conflictAt = authorConflictAt(b.author, b.id, assignedAt);
+      if (conflictAt >= 0) {
+        const warn = el('span', 'cand-author-warn');
+        warn.textContent = `⚠ Same author as "${SQUARES[conflictAt].name}"`;
+        meta.appendChild(warn);
+      }
+    }
+    info.appendChild(meta);
+    row.appendChild(info);
+
+    // Status badge
+    const badgeLabel = statusKey === 'read' ? 'Read' : statusKey === 'assigned' ? 'Planned' : 'Unassigned';
+    const badge = el('span', `statebadge s-${statusKey}`);
+    const dot = el('span', 'dot'); badge.appendChild(dot);
+    badge.appendChild(document.createTextNode(badgeLabel));
+    row.appendChild(badge);
+
+    listEl.appendChild(row);
+  });
+}
+
+function buildInlinePool() {
+  const wrap = document.getElementById('inline-pool');
+  wrap.innerHTML = '';
+
+  // ── Toolbar: pill search + add button
+  const toolbar = el('div', 'pool-toolbar');
+  const searchPill = el('div', 'pool-search-pill');
+  const si = el('span', 'pool-search-icon'); si.textContent = '🔍';
+  const sin = el('input', 'pool-search-input');
+  sin.type = 'text'; sin.placeholder = 'Search title or author…'; sin.value = poolQuery;
+  sin.oninput = () => { poolQuery = sin.value; refreshList(); };
+  searchPill.appendChild(si); searchPill.appendChild(sin);
+  toolbar.appendChild(searchPill);
+  const addToggle = el('button', 'pool-add-toggle');
+  addToggle.innerHTML = '＋ Add a book';
+  addToggle.onclick = () => openAddSheet();
+  toolbar.appendChild(addToggle);
+  wrap.appendChild(toolbar);
+
+  // ── Filter chips
+  const counts = poolCounts();
+  const chipsEl = el('div', 'pool-chips');
+  [['all','All'], ['unassigned','Unassigned'], ['planned','Planned'], ['read','Read']].forEach(([id, label]) => {
+    const chip = el('button', `pool-chip${poolFilter === id ? ' active' : ''}`);
+    chip.appendChild(document.createTextNode(label + ' '));
+    const ct = el('span', 'pool-chip-ct'); ct.textContent = counts[id];
+    chip.appendChild(ct);
+    chip.onclick = () => { poolFilter = id; buildInlinePool(); };
+    chipsEl.appendChild(chip);
+  });
+  wrap.appendChild(chipsEl);
+
+  // ── Book list
+  let listEl = el('div', 'pool-list');
+  renderPoolList(listEl);
+  wrap.appendChild(listEl);
+
+  function refreshList() {
+    const fresh = el('div', 'pool-list');
+    renderPoolList(fresh);
+    listEl.replaceWith(fresh);
+    listEl = fresh; // keep reference pointing at the live node
+  }
+
+  // ── Clear pool
+  if (pool.length) {
+    const footer = el('div', 'pool-footer');
+    const clearBtn = el('button', 'btn-clear-pool'); clearBtn.textContent = '🗑 Clear pool';
+    clearBtn.onclick = () => {
+      if (!confirm('Remove all books from your pool? Square assignments will also be cleared.')) return;
+      pool = []; asgn = {}; savePool(); saveAsgn(); poolFilter = 'all'; poolQuery = '';
+      renderGrid(); buildInlinePool(); updateStats();
+    };
+    footer.appendChild(clearBtn);
+    wrap.appendChild(footer);
+  }
+}
+
+// ── Add-book sheet ────────────────────────────────────────────────────────────
+function openAddSheet(sqIdx = null) {
+  buildAddSheet(sqIdx);
+  document.getElementById('add-scrim').classList.add('open');
+  document.getElementById('add-sheet').classList.add('open');
+}
+function closeAddSheet() {
+  document.getElementById('add-scrim').classList.remove('open');
+  document.getElementById('add-sheet').classList.remove('open');
+}
+document.getElementById('add-scrim').addEventListener('click', closeAddSheet);
+
+function buildAddSheet(sqIdx = null) {
+  const head = document.getElementById('add-sheet-head');
+  const body = document.getElementById('add-sheet-body');
+  const foot = document.getElementById('add-sheet-foot');
+  head.innerHTML = ''; body.innerHTML = ''; foot.innerHTML = '';
+
+  // ── Head
+  const closeBtn = el('button'); closeBtn.className = 'sheet-close'; closeBtn.innerHTML = '✕'; closeBtn.setAttribute('aria-label','Close'); closeBtn.onclick = closeAddSheet;
+  head.appendChild(closeBtn);
+  if (sqIdx !== null) {
+    // Square context: square name is the headline, HM below
+    const mono = el('div'); mono.className = 'sheet-mono'; mono.textContent = 'Add a book';
+    const title = el('h2'); title.textContent = SQUARES[sqIdx].name;
+    head.appendChild(mono); head.appendChild(title);
+    const sq = SQUARES[sqIdx];
+    const hmBox = el('div', sq.hm.startsWith('No hard mode') ? 'sheet-hm-box sheet-hm-none' : 'sheet-hm-box');
+    hmBox.innerHTML = sq.hm.startsWith('No hard mode')
+      ? `<em>${esc(sq.hm)}</em>`
+      : `<strong>Hard mode:</strong> ${esc(sq.hm)}`;
+    head.appendChild(hmBox);
+  } else {
+    // Pool context: generic
+    const mono = el('div'); mono.className = 'sheet-mono'; mono.textContent = 'Pool';
+    const title = el('h2'); title.textContent = 'Add a book';
+    head.appendChild(mono); head.appendChild(title);
+  }
+
+  // ── Body: search
+  const pSearchRow = el('div', 'search-row');
+  const pSw = el('div', 'search-wrap');
+  const pSi = el('input'); pSi.type = 'text'; pSi.placeholder = 'Search by title or author…'; pSi.autocomplete = 'off';
+  const pSp = el('div', 'spinner'); pSw.appendChild(pSi); pSw.appendChild(pSp);
+  pSearchRow.appendChild(pSw);
+  const pSbtn = el('button', 'search-btn'); pSbtn.textContent = '🔍'; pSbtn.type = 'button';
+  pSearchRow.appendChild(pSbtn);
+  body.appendChild(pSearchRow);
+
+  const pSr = el('div', 'results'); body.appendChild(pSr);
+
+  const pPrev = el('div', 'sel-preview'); body.appendChild(pPrev);
+
+  // Cover picker — shown when API returns thumbnails (search picks)
+  const pCpRow = el('div', 'cover-picker-row');
+  const pCpLbl = el('div', 'cover-picker-label'); pCpLbl.textContent = 'Pick a cover:'; pCpRow.appendChild(pCpLbl);
+  const pCpStrip = el('div', 'cover-picker-strip'); pCpRow.appendChild(pCpStrip);
+  body.appendChild(pCpRow);
+
+  // Custom cover URL — always shown once a book is selected (search or manual)
+  const pCuRow = el('div', 'inline-cover-row'); pCuRow.style.display = 'none';
+  const pCuLbl = el('label'); pCuLbl.textContent = 'Or add custom cover'; pCuLbl.style.cssText = 'font-size:11px;color:#888;font-weight:600;white-space:nowrap;';
+  const pCuIn = el('input', 'inline-cover-input'); pCuIn.type = 'url'; pCuIn.placeholder = 'Paste image URL…';
+  const pCuThumb = el('img', 'inline-cover-thumb'); pCuThumb.alt = '';
+  pCuRow.appendChild(pCuLbl); pCuRow.appendChild(pCuIn); pCuRow.appendChild(pCuThumb);
+  body.appendChild(pCuRow);
+  pCuIn.addEventListener('input', () => {
+    const url = pCuIn.value.trim();
+    if (pPending) pPending.coverUrl = url || (pPending._apiCover || null);
+    if (url) { pCuThumb.src = url; pCuThumb.classList.add('show'); }
+    else { pCuThumb.src = ''; pCuThumb.classList.remove('show'); }
+  });
+
+  // ── Qualifies mini grid (pool tab only — not shown when adding from a card square)
+  let pQualGrid = null;
+  if (sqIdx === null) {
+    const pQualHdr = el('div', 'bd-sec-label');
+    const pQualLblSpan = el('span');
+    pQualLblSpan.textContent = 'Qualifies for (0 squares)';
+    pQualHdr.appendChild(pQualLblSpan);
+    body.appendChild(pQualHdr);
+
+    const pQualHint = el('div', 'bd-mini-hint');
+    pQualHint.textContent = 'Tap squares this book could count for.';
+    body.appendChild(pQualHint);
+
+    pQualGrid = el('div', 'sq-tag-list');
+    SQUARES.forEach((s, i) => {
+      const row = el('div', 'sq-tag-row');
+      row.dataset.pqi = i;
+      const check = el('div', 'sq-tag-check');
+      check.innerHTML = '<svg class="sq-tag-check-icon" width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      const name = el('span', 'sq-tag-row-name');
+      name.textContent = s.name;
+      row.appendChild(check);
+      row.appendChild(name);
+      row.onclick = () => {
+        row.classList.toggle('on');
+        const n = pQualGrid.querySelectorAll('.on').length;
+        pQualLblSpan.textContent = `Qualifies for (${n} square${n === 1 ? '' : 's'})`;
+        addBtn.disabled = !pPending?.title;
+      };
+      pQualGrid.appendChild(row);
+    });
+    body.appendChild(pQualGrid);
+  }
+
+  // ── Foot: Cancel + Add buttons
+  const cancelBtn = el('button', 'btn-sheet-cancel'); cancelBtn.textContent = 'Cancel';
+  cancelBtn.onclick = closeAddSheet;
+  const addBtn = el('button', 'btn-sheet-add'); addBtn.textContent = sqIdx !== null ? 'Add book' : 'Add to pool';
+  addBtn.disabled = true;
+  foot.appendChild(cancelBtn); foot.appendChild(addBtn);
+
+  let pPending = null;
+
+  function syncAddBtn() {
+    addBtn.disabled = !pPending?.title;
+  }
+
+  function pRenderCovers(book, activeUrl) {
+    const covers = [...(book.covers || (book.cover ? [book.cover] : []))].slice(0, 8);
+    if (!covers.length) { pCpRow.classList.remove('show'); return; }
+    pCpRow.classList.add('show'); pCpStrip.innerHTML = '';
+    covers.forEach(url => {
+      const img = el('img', 'cover-opt' + (url === activeUrl ? ' sel' : '')); img.src = url; img.alt = '';
+      img.onerror = () => img.remove();
+      img.onload = () => { if (img.naturalWidth < 60 || img.naturalHeight < 80) img.remove(); };
+      img.onclick = () => {
+        pCpStrip.querySelectorAll('.cover-opt').forEach(x => x.classList.remove('sel'));
+        img.classList.add('sel');
+        if (pPending) { pPending.coverUrl = url; pPending._apiCover = url; }
+        // Clear any custom URL field so picker choice takes effect
+        pCuIn.value = ''; pCuThumb.src = ''; pCuThumb.classList.remove('show');
+      };
+      pCpStrip.appendChild(img);
+    });
+  }
+
+  let _coverGen = 0;
+  function pSelectBook(b) {
+    const gen = ++_coverGen;
+    pPending = { title: b.title, author: b.author, coverUrl: b.cover || null, _apiCover: b.cover || null, covers: b.covers || [], olWorkKey: b.olWorkKey || null };
+    pPrev.innerHTML = `<div class="sel-title">${esc(b.title)}</div>${b.author ? `<div class="sel-author">${esc(b.author)}</div>` : ''}`;
+    pPrev.classList.add('show');
+    pRenderCovers(b, b.cover || null);
+    pSr.classList.remove('show'); pSr.innerHTML = '';
+    // Show the custom URL row; reset it
+    pCuRow.style.display = 'flex'; pCuIn.value = ''; pCuThumb.src = ''; pCuThumb.classList.remove('show');
+    syncAddBtn();
+    // Fetch more covers async: OL work endpoint + targeted GB search
+    const addMoreCovers = (urls) => {
+      if (gen !== _coverGen) return; // stale — user selected a different book
+      if (!urls.length) return;
+      pPending.covers = [...new Set([...pPending.covers, ...urls])].slice(0, 8);
+      // Prefer OL covers over GB — OL images tend to be larger and higher quality
+      if (pPending.coverUrl?.includes('books.google.com')) {
+        const olCover = pPending.covers.find(u => u.includes('covers.openlibrary.org'));
+        if (olCover) { pPending.coverUrl = olCover; pPending._apiCover = olCover; }
+      }
+      pRenderCovers({ covers: pPending.covers }, pPending.coverUrl);
+    };
+    if (b.olWorkKey) {
+      fetch(`https://openlibrary.org${b.olWorkKey}/editions.json?limit=20`).then(r => r.ok ? r.json() : null).catch(() => null).then(data => {
+        if (!data?.entries?.length) return;
+        const ids = data.entries.flatMap(e => e.covers || []).filter(id => id > 0);
+        addMoreCovers([...new Set(ids)].slice(0, 8).map(id => `https://covers.openlibrary.org/b/id/${id}-L.jpg`));
+      });
+    }
+    // Targeted GB search — free-text finds more editions, title filter below drops unrelated books
+    const gbQ = b.author ? `${b.title} ${b.author}` : b.title;
+    const normT = s => s.toLowerCase().trim();
+    fetch(gbUrl(gbQ, 5)).then(r => r.ok ? r.json() : null).catch(() => null).then(data => {
+      const covers = (data?.items || []).flatMap(item => {
+        const info = item.volumeInfo || {};
+        // Skip results that aren't actually this book
+        if (info.title && !normT(info.title).includes(normT(b.title)) && !normT(b.title).includes(normT(info.title))) return [];
+        const links = info.imageLinks || {};
+        const c = fixUrl(links.thumbnail);
+        return c ? [c] : [];
+      });
+      addMoreCovers(covers);
+    });
+  }
+
+  async function pDoSearch() {
+    const q = pSi.value.trim(); if (q.length < 2) return;
+    pSw.classList.add('loading'); pSr.innerHTML = ''; pSr.classList.remove('show');
+    const results = await searchBooks(q);
+    pSw.classList.remove('loading');
+    if (!results?.length) {
+      pSr.innerHTML = `<div class="no-results">${results === null ? 'Search failed — check connection' : 'No results found'}</div>`;
+      pSr.classList.add('show'); return;
+    }
+    results.forEach(b => {
+      const item = el('div', 'result-item');
+      if (b.thumb) { const img = el('img', 'result-thumb'); img.src = b.thumb; img.alt = ''; item.appendChild(img); }
+      else { item.appendChild(thumbPh()); }
+      const info = el('div', 'result-info');
+      const t = el('div', 'result-title'); t.textContent = b.title; info.appendChild(t);
+      if (b.author) { const a = el('div', 'result-author'); a.textContent = b.author; info.appendChild(a); }
+      item.appendChild(info);
+      item.onclick = () => pSelectBook(b);
+      pSr.appendChild(item);
+    });
+    pSr.classList.add('show');
+  }
+
+  pSbtn.onclick = pDoSearch;
+  pSi.addEventListener('keydown', e => { if (e.key === 'Enter') pDoSearch(); });
+  let _searchDebounce = null;
+  pSi.addEventListener('input', () => {
+    clearTimeout(_searchDebounce);
+    _searchDebounce = setTimeout(pDoSearch, 400);
+  });
+
+  addBtn.onclick = () => {
+    if (!pPending?.title) return;
+    const qualifies = pQualGrid
+      ? [...pQualGrid.querySelectorAll('[data-pqi].on')].map(c => parseInt(c.dataset.pqi))
+      : (sqIdx !== null ? [sqIdx] : []);
+    // Upsert: if book already in pool, merge qualifies; otherwise add new
+    let entry = pool.find(b => b.title.toLowerCase() === pPending.title.toLowerCase());
+    if (entry) {
+      entry.qualifies = [...new Set([...(entry.qualifies || []), ...qualifies])];
+      if (pPending.coverUrl) entry.coverUrl = pPending.coverUrl;
+      if (pPending.author && !entry.author) entry.author = pPending.author;
+    } else {
+      entry = { id: `${Date.now()}_${Math.random().toString(36).slice(2)}`, title: pPending.title, author: pPending.author || '', coverUrl: pPending.coverUrl || null, qualifies };
+      pool.push(entry);
+    }
+    savePool(); updateStats();
+    if (sqIdx === null) buildInlinePool();
+    if (sqIdx !== null) {
+      // Auto-assign if the square was empty
+      if (!asgn[sqIdx]) {
+        asgn[sqIdx] = { bookId: entry.id, status: 'assigned', hm: false, rating: 0 };
+        saveAsgn();
+      }
+      renderGrid();
+      closeAddSheet();
+    } else {
+      closeAddSheet();
+    }
+    showToast(`✓ "${entry.title}" added to pool`);
+  };
+
+  // Focus search after open animation
+  setTimeout(() => pSi.focus(), 320);
+}
+
+// ── Book detail overlay ───────────────────────────────────────────────────────
+function openBookDetail(bookId, openAccordion) {
+  poolDetailId = bookId;
+  poolDetailAccordionOpen = openAccordion ? new Set([openAccordion]) : null;
+  buildBookDetail();
+  document.getElementById('book-overlay').classList.add('open');
+}
+function closeBookDetail() {
+  document.getElementById('book-overlay').classList.remove('open');
+  poolDetailId = null;
+  poolDetailAccordionOpen = null;
+}
+document.getElementById('book-overlay').addEventListener('click', e => { if (e.target.id === 'book-overlay') closeBookDetail(); });
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (document.getElementById('add-sheet').classList.contains('open')) closeAddSheet();
+  else if (document.getElementById('overlay').classList.contains('open')) closeModal();
+  else if (document.getElementById('book-overlay').classList.contains('open')) closeBookDetail();
+  else if (document.getElementById('stats-overlay').classList.contains('open')) document.getElementById('stats-overlay').classList.remove('open');
+});
+
+function buildBookDetail() {
+  const modal   = document.getElementById('book-modal');
+  const overlay = document.getElementById('book-overlay');
+  const savedScroll = overlay.scrollTop;
+  modal.innerHTML = '';
+
+  const b = pool.find(b => b.id === poolDetailId);
+  if (!b) { closeBookDetail(); return; }
+
+  const assignedAt = assignedSquareOf(b.id);
+  const a          = assignedAt >= 0 ? asgn[assignedAt] : null;
+  const status     = a ? a.status : null;
+
+  // Initialize accordion open state on fresh open; preserve on rebuild
+  if (poolDetailAccordionOpen === null) {
+    poolDetailAccordionOpen = new Set();
+    if (!a) poolDetailAccordionOpen.add('Tag additional squares');
+  }
+
+  // ── Header
+  const hdr = el('div', 'bd-header');
+  const coverWrap = el('div', 'modal-book-cover-wrap');
+  const coverEl = el('div', 'bd-cover');
+  if (b.coverUrl) {
+    const img = el('img'); img.src = b.coverUrl; img.alt = b.title;
+    img.onerror = () => { img.remove(); coverEl.textContent = '📚'; };
+    coverEl.appendChild(img);
+  } else { coverEl.textContent = '📚'; }
+  coverWrap.appendChild(coverEl);
+  const ecLink = el('button', 'modal-edit-cover-link'); ecLink.textContent = 'Edit cover';
+  ecLink.onclick = () => { coverEditSection.style.display = coverEditSection.style.display === 'none' ? 'block' : 'none'; };
+  coverWrap.appendChild(ecLink);
+  hdr.appendChild(coverWrap);
+
+  const hdrInfo = el('div', 'bd-header-info');
+  const titleEl = el('div', 'bd-title'); titleEl.textContent = b.title; hdrInfo.appendChild(titleEl);
+  if (b.author) { const au = el('div', 'bd-author'); au.textContent = b.author; hdrInfo.appendChild(au); }
+  if (a) {
+    const sqChip = el('div', 'bd-sq-chip'); sqChip.textContent = '▦ ' + SQUARES[assignedAt].name;
+    sqChip.title = 'Open this square'; sqChip.onclick = () => { closeBookDetail(); openModal(assignedAt); };
+    hdrInfo.appendChild(sqChip);
+  } else {
+    const noSq = el('div', 'bd-not-assigned'); noSq.textContent = 'Not assigned'; hdrInfo.appendChild(noSq);
+  }
+  if (a) {
+    const rdBtn = el('button', status === 'read' ? 'btn-sm-read active' : 'btn-sm-read');
+    rdBtn.textContent = status === 'read' ? '✓ Read' : '✓ Mark as Read';
+    rdBtn.onclick = () => {
+      asgn[assignedAt].status = status === 'read' ? 'assigned' : 'read';
+      saveAsgn(); buildBookDetail(); renderGrid(); buildInlinePool();
+    };
+    const actions = el('div', 'modal-book-actions');
+    actions.appendChild(rdBtn); hdrInfo.appendChild(actions);
+  }
+  hdr.appendChild(hdrInfo);
+  const x = el('button', 'bd-close'); x.textContent = '✕'; x.setAttribute('aria-label','Close'); x.onclick = closeBookDetail;
+  hdr.appendChild(x);
+  modal.appendChild(hdr);
+
+  // ── Inline cover editor (toggled by "Edit cover" link)
+  const coverEditSection = el('div', '');
+  coverEditSection.style.cssText = 'display:none; padding: 10px 16px 14px; border-bottom: 1px solid #f0ede8;';
+  const icRow = el('div', 'inline-cover-row');
+  const icLbl = el('label'); icLbl.textContent = 'URL:'; icRow.appendChild(icLbl);
+  const icIn = el('input', 'inline-cover-input'); icIn.type = 'url'; icIn.value = b.coverUrl || ''; icIn.placeholder = 'Paste image URL';
+  const icThumb = el('img', 'inline-cover-thumb' + (b.coverUrl ? ' show' : ''));
+  icThumb.src = b.coverUrl || ''; icThumb.alt = '';
+  icIn.addEventListener('input', () => {
+    const u = icIn.value.trim();
+    if (u) { icThumb.src = u; icThumb.className = 'inline-cover-thumb show'; icThumb.onerror = () => icThumb.classList.remove('show'); }
+    else { icThumb.className = 'inline-cover-thumb'; }
+  });
+  icRow.appendChild(icIn); icRow.appendChild(icThumb);
+  coverEditSection.appendChild(icRow);
+  const saveBtn = el('button', 'btn-save-tags'); saveBtn.textContent = 'Save cover';
+  saveBtn.style.marginTop = '8px';
+  saveBtn.onclick = () => { b.coverUrl = icIn.value.trim() || null; savePool(); buildBookDetail(); buildInlinePool(); };
+  coverEditSection.appendChild(saveBtn);
+  modal.appendChild(coverEditSection);
+
+  // ── Hard mode + stars (only when read)
+  if (a && status === 'read') {
+    const statusSec = el('div', 'bd-status-sec');
+    const hmRow = el('div', 'bd-hm-row');
+    const hmCb = el('input'); hmCb.type = 'checkbox'; hmCb.id = 'bd-hm-cb'; hmCb.checked = !!a.hm;
+    hmCb.onchange = () => { asgn[assignedAt].hm = hmCb.checked; saveAsgn(); renderGrid(); };
+    const hmLbl = el('label'); hmLbl.htmlFor = 'bd-hm-cb';
+    hmLbl.appendChild(document.createTextNode('Counts as '));
+    const strong = el('strong'); strong.textContent = 'hard mode';
+    hmLbl.appendChild(strong);
+    hmRow.appendChild(hmCb); hmRow.appendChild(hmLbl);
+    statusSec.appendChild(hmRow);
+
+    const stars = el('div', 'bd-stars');
+    stars.setAttribute('role','group'); stars.setAttribute('aria-label','Rating');
+    for (let k = 1; k <= 5; k++) {
+      const s = el('span', `b-star${k <= (a.rating || 0) ? ' on' : ''}`); s.textContent = '★';
+      s.setAttribute('role','button'); s.setAttribute('aria-label',`${k} star${k>1?'s':''}`);
+      s.onclick = () => { asgn[assignedAt].rating = k; saveAsgn(); buildBookDetail(); renderGrid(); };
+      stars.appendChild(s);
+    }
+    statusSec.appendChild(stars);
+    modal.appendChild(statusSec);
+  }
+
+  // ── Accordion helper
+  function makeAccordion(label, badge) {
+    const isOpen = poolDetailAccordionOpen.has(label);
+    const item = el('div', 'bd-acc-item' + (isOpen ? ' open' : ''));
+    const hdrA = el('div', 'bd-acc-hdr');
+    hdrA.onclick = () => {
+      item.classList.toggle('open');
+      if (item.classList.contains('open')) poolDetailAccordionOpen.add(label);
+      else poolDetailAccordionOpen.delete(label);
+    };
+    const left = el('div', 'bd-acc-left');
+    const chevron = el('span', 'bd-acc-chevron'); chevron.textContent = '▸';
+    left.appendChild(chevron);
+    const lbl = el('span'); lbl.textContent = label; left.appendChild(lbl);
+    if (badge) { const bdg = el('span', 'bd-acc-count'); bdg.textContent = badge; left.appendChild(bdg); }
+    hdrA.appendChild(left);
+    const body = el('div', 'bd-acc-body');
+    item.appendChild(hdrA); item.appendChild(body);
+    modal.appendChild(item);
+    return body;
+  }
+
+  // ── Tag squares accordion
+  const tagCount = (b.qualifies || []).length;
+  const tagsBody = makeAccordion('Tag additional squares', tagCount || null);
+
+  const tagList = el('div', 'sq-tag-list');
+  SQUARES.forEach((sq, si) => {
+    const isAssigned = si === assignedAt;
+    const qualifies  = (b.qualifies || []).includes(si);
+    const row = el('div', 'sq-tag-row' + ((isAssigned || qualifies) ? ' on' : '') + (isAssigned ? ' sq-tag-locked' : ''));
+    const check = el('div', 'sq-tag-check');
+    check.innerHTML = '<svg class="sq-tag-check-icon" width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const name = el('span', 'sq-tag-row-name');
+    name.textContent = sq.name;
+    row.appendChild(check);
+    row.appendChild(name);
+    if (isAssigned) {
+      const badge = el('span', 'sq-tag-badge');
+      badge.textContent = 'Assigned';
+      row.appendChild(badge);
+      const unassignBtn = el('button', 'sq-tag-btn sq-tag-unassign');
+      unassignBtn.textContent = 'Unassign';
+      unassignBtn.style.cssText = 'border-color:#e87b6e;color:#c0392b;margin-left:6px;';
+      unassignBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (a.status === 'read' && !confirm(`Remove "${b.title}" from this square? It will stay in your pool.`)) return;
+        const listSt = tagList.scrollTop;
+        delete asgn[assignedAt]; saveAsgn();
+        buildBookDetail();
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          const newList = document.querySelector('#book-modal .sq-tag-list');
+          if (newList) newList.scrollTop = listSt;
+        }));
+        renderGrid(); buildInlinePool();
+      };
+      row.appendChild(unassignBtn);
+    } else {
+      const makeAssignBtn = () => {
+        const ab = el('button', 'sq-tag-btn btn-assign sq-tag-assign');
+        ab.textContent = 'Assign';
+        ab.onclick = (e) => {
+          e.stopPropagation();
+          asgn[si] = { bookId: b.id, status: 'assigned', hm: false, rating: 0 };
+          saveAsgn();
+          const listSt = tagList.scrollTop;
+          buildBookDetail();
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            const newList = document.querySelector('#book-modal .sq-tag-list');
+            if (newList) newList.scrollTop = listSt;
+          }));
+          renderGrid(); buildInlinePool();
+        };
+        return ab;
+      };
+
+      if (qualifies) row.appendChild(makeAssignBtn());
+
+      row.onclick = () => {
+        const nowTagged = (b.qualifies || []).includes(si);
+        if (nowTagged) {
+          b.qualifies = b.qualifies.filter(q => q !== si);
+          row.classList.remove('on');
+          row.querySelector('.sq-tag-assign')?.remove();
+        } else {
+          b.qualifies = [...(b.qualifies || []), si];
+          row.classList.add('on');
+          row.appendChild(makeAssignBtn());
+        }
+        savePool(); buildInlinePool(); renderGrid();
+        // Update badge count in place — no modal rebuild
+        const accLeft = tagsBody.closest('.bd-acc-item')?.querySelector('.bd-acc-left');
+        let countBadge = accLeft?.querySelector('.bd-acc-count');
+        const n = (b.qualifies || []).length;
+        if (countBadge) { if (n > 0) countBadge.textContent = n; else countBadge.remove(); }
+        else if (n > 0 && accLeft) { const bdg = el('span', 'bd-acc-count'); bdg.textContent = n; accLeft.appendChild(bdg); }
+      };
+    }
+    tagList.appendChild(row);
+  });
+  tagsBody.appendChild(tagList);
+
+
+  // ── Footer
+  const footer = el('div', 'bd-footer');
+
+  const delBtn = el('button', 'bd-btn-delete'); delBtn.textContent = 'Delete';
+  delBtn.onclick = () => {
+    if (!confirm(assignedAt >= 0
+      ? `Remove "${b.title}" from your pool? It will also be unassigned from "${SQUARES[assignedAt].name}".`
+      : `Remove "${b.title}" from your pool?`)) return;
+    if (assignedAt >= 0) { delete asgn[assignedAt]; saveAsgn(); }
+    pool = pool.filter(x => x.id !== b.id);
+    savePool(); closeBookDetail(); renderGrid(); buildInlinePool(); updateStats();
+  };
+  footer.appendChild(delBtn);
+
+  const doneBtn = el('button', 'bd-btn-done'); doneBtn.textContent = 'Done';
+  doneBtn.onclick = closeBookDetail;
+  footer.appendChild(doneBtn);
+  modal.appendChild(footer);
+
+  requestAnimationFrame(() => { overlay.scrollTop = savedScroll; });
+}
+
+// ── Stats drill-down ──────────────────────────────────────────────────────────
+function openStats(filter) {
+  const modal = document.getElementById('stats-modal');
+  modal.innerHTML = '';
+
+  const labels = { planned: 'Planned', read: 'Read', hm: 'Hard Mode', bingo: 'Bingos' };
+
+  const hdr = el('div','pool-hdr');
+  const title = el('div','pool-title'); title.textContent = labels[filter];
+  const closeBtn = el('button','pool-close'); closeBtn.innerHTML = '&times;'; closeBtn.setAttribute('aria-label','Close');
+  closeBtn.onclick = () => document.getElementById('stats-overlay').classList.remove('open');
+  hdr.appendChild(title); hdr.appendChild(closeBtn);
+  modal.appendChild(hdr);
+
+  if (filter === 'bingo') {
+    const lines = [
+      ...[0,1,2,3,4].map(r => ({ label: `Row ${r+1}`, idxs: [0,1,2,3,4].map(c => r*5+c) })),
+      ...[0,1,2,3,4].map(c => ({ label: `Column ${c+1}`, idxs: [0,1,2,3,4].map(r => r*5+c) })),
+      { label: 'Diagonal ↘', idxs: [0,6,12,18,24] },
+      { label: 'Diagonal ↗', idxs: [4,8,12,16,20] },
+    ].filter(line => line.idxs.every(i => asgn[i]?.status === 'read'));
+
+    if (!lines.length) {
+      const e = el('div','pool-empty-state'); e.textContent = 'No bingos yet — keep reading!';
+      modal.appendChild(e);
+    } else {
+      lines.forEach(line => {
+        const ghdr = el('div','pool-group-hdr'); ghdr.textContent = line.label; modal.appendChild(ghdr);
+        line.idxs.forEach(i => renderStatRow(i, modal));
+      });
+    }
+  } else {
+    const entries = Object.entries(asgn).filter(([, a]) =>
+      filter === 'planned' ? a.status === 'assigned' :
+      filter === 'read'    ? a.status === 'read' :
+      /* hm */               a.status === 'read' && a.hm
+    );
+    if (!entries.length) {
+      const e = el('div','pool-empty-state'); e.textContent = 'Nothing here yet.';
+      modal.appendChild(e);
+    } else {
+      entries.forEach(([sqIdx]) => renderStatRow(parseInt(sqIdx), modal));
+    }
+  }
+
+  document.getElementById('stats-overlay').classList.add('open');
+}
+
+function renderStatRow(sqIdx, modal) {
+  const a    = asgn[sqIdx];
+  const book = a ? pool.find(b => b.id === a.bookId) : null;
+  if (!book) return;
+
+  const row = el('div','pool-book');
+  const statusKey = a.status === 'read' ? 'read' : 'assigned';
+  const cov = el('div', `pool-cover status-${statusKey}`);
+  if (book.coverUrl) {
+    const img = el('img'); img.src = book.coverUrl; img.alt = book.title;
+    img.onerror = () => { cov.textContent = '📚'; };
+    cov.appendChild(img);
+  } else { cov.textContent = '📚'; }
+  row.appendChild(cov);
+
+  const info = el('div','pool-info');
+  const bt = el('div','pool-book-title'); bt.textContent = book.title; info.appendChild(bt);
+  if (book.author) { const ba = el('div','pool-book-author'); ba.textContent = book.author; info.appendChild(ba); }
+  const meta = el('div','pool-book-meta');
+  const sq = el('div','pool-meta-sq'); sq.textContent = SQUARES[sqIdx].name; meta.appendChild(sq);
+  info.appendChild(meta);
+  row.appendChild(info);
+
+  row.style.cursor = 'pointer';
+  row.onclick = () => {
+    document.getElementById('stats-overlay').classList.remove('open');
+    openModal(sqIdx);
+  };
+  modal.appendChild(row);
+}
+
+document.getElementById('stats-overlay').addEventListener('click', e => {
+  if (e.target.id === 'stats-overlay') document.getElementById('stats-overlay').classList.remove('open');
+});
+document.getElementById('stat-planned').onclick = () => openStats('planned');
+document.getElementById('stat-read').onclick    = () => openStats('read');
+document.getElementById('stat-hm').onclick      = () => openStats('hm');
+document.getElementById('stat-bingo').onclick   = () => openStats('bingo');
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+renderGrid();
+</script>
+</body>
+</html>
