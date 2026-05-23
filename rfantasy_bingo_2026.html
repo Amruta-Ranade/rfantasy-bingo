@@ -400,7 +400,7 @@
 </div>
 
 <script>
-const GB_KEY = 'AIzaSyCE4qdyQdBTvr6F691wtyhG-AeD0ZoOB8E';
+const WORKER_URL = 'https://rfantasy-bingo-proxy.morning-dream-9080.workers.dev';
 
 const SQUARES = [
   { name: "Trans or Nonbinary Protagonist",   hm: "Set in a pre-modern time period" },
@@ -449,6 +449,17 @@ function el(tag, cls) { const d = document.createElement(tag); if (cls) d.classN
 function coverPh() { const d = el('div','sq-cover-ph'); d.textContent = '📚'; return d; }
 function thumbPh() { const d = el('div','result-thumb-ph'); d.textContent = '📚'; return d; }
 function fixUrl(u) { return u ? u.replace('http://','https://').replace('&edge=curl','') : null; }
+function proxyCover(u) {
+  if (!u) return null;
+  const fixed = fixUrl(u);
+  try {
+    const h = new URL(fixed).hostname;
+    if (h === 'books.google.com' || h === 'covers.openlibrary.org') {
+      return `${WORKER_URL}/cover?url=${encodeURIComponent(fixed)}`;
+    }
+  } catch {}
+  return fixed;
+}
 function candidatesFor(idx) { return pool.filter(b => (b.qualifies||[]).includes(idx)); }
 function assignedSquareOf(bookId) {
   const k = Object.keys(asgn).find(k => asgn[k].bookId === bookId);
@@ -518,7 +529,7 @@ function renderGrid() {
 
     const cover = el('div', 'sq-cover');
     if (book?.coverUrl) {
-      const img = el('img'); img.src = book.coverUrl; img.alt = book.title;
+      const img = el('img'); img.src = proxyCover(book.coverUrl); img.alt = book.title;
       img.onerror = () => { img.remove(); cover.appendChild(coverPh()); };
       cover.appendChild(img);
     } else {
@@ -675,7 +686,7 @@ function buildModal() {
     const coverWrap = el('div','modal-book-cover-wrap');
     const coverEl = el('div','modal-book-cover');
     if (book.coverUrl) {
-      const img = el('img'); img.src = book.coverUrl; img.alt = book.title;
+      const img = el('img'); img.src = proxyCover(book.coverUrl); img.alt = book.title;
       img.onerror = () => { coverEl.textContent = '📚'; };
       coverEl.appendChild(img);
     } else { coverEl.textContent = '📚'; }
@@ -767,7 +778,7 @@ function buildModal() {
 
       const cv = el('div','cand-cover');
       if (b.coverUrl) {
-        const img = el('img'); img.src = b.coverUrl; img.alt = b.title;
+        const img = el('img'); img.src = proxyCover(b.coverUrl); img.alt = b.title;
         img.onerror = () => { cv.textContent = '📚'; };
         cv.appendChild(img);
       } else { cv.textContent = '📚'; }
@@ -896,7 +907,7 @@ function showToast(msg, bg = '#3b6d11') {
 }
 
 // ── Book search ───────────────────────────────────────────────────────────────
-function gbUrl(q, n=8) { return `https://www.googleapis.com/books/v1/volumes?key=${GB_KEY}&q=${encodeURIComponent(q)}&maxResults=${n}&printType=books`; }
+function gbUrl(q, n=8) { return `${WORKER_URL}/search?q=${encodeURIComponent(q)}&n=${n}`; }
 
 // Static nonfiction-filter constants — hoisted so they compile once, not per search call.
 // Only block on hard nonfiction signals — default allow so indie/self-pub fiction without
@@ -1114,7 +1125,7 @@ function renderPoolList(listEl) {
     // Cover with status-tinted gradient placeholder
     const cov = el('div', `pool-cover status-${statusKey}`);
     if (b.coverUrl) {
-      const img = el('img'); img.src = b.coverUrl; img.alt = b.title;
+      const img = el('img'); img.src = proxyCover(b.coverUrl); img.alt = b.title;
       img.onerror = () => { img.remove(); cov.textContent = '📚'; };
       cov.appendChild(img);
     } else { cov.textContent = '📚'; }
@@ -1339,7 +1350,7 @@ function buildAddSheet(sqIdx = null) {
     if (!covers.length) { pCpRow.classList.remove('show'); return; }
     pCpRow.classList.add('show'); pCpStrip.innerHTML = '';
     covers.forEach(url => {
-      const img = el('img', 'cover-opt' + (url === activeUrl ? ' sel' : '')); img.src = url; img.alt = '';
+      const img = el('img', 'cover-opt' + (url === activeUrl ? ' sel' : '')); img.src = proxyCover(url); img.alt = '';
       img.onerror = () => img.remove();
       img.onload = () => { if (img.naturalWidth < 60 || img.naturalHeight < 80) img.remove(); };
       img.onclick = () => {
@@ -1410,7 +1421,7 @@ function buildAddSheet(sqIdx = null) {
     }
     results.forEach(b => {
       const item = el('div', 'result-item');
-      if (b.thumb) { const img = el('img', 'result-thumb'); img.src = b.thumb; img.alt = ''; item.appendChild(img); }
+      if (b.thumb) { const img = el('img', 'result-thumb'); img.src = proxyCover(b.thumb); img.alt = ''; item.appendChild(img); }
       else { item.appendChild(thumbPh()); }
       const info = el('div', 'result-info');
       const t = el('div', 'result-title'); t.textContent = b.title; info.appendChild(t);
@@ -1511,7 +1522,7 @@ function buildBookDetail() {
   const coverWrap = el('div', 'modal-book-cover-wrap');
   const coverEl = el('div', 'bd-cover');
   if (b.coverUrl) {
-    const img = el('img'); img.src = b.coverUrl; img.alt = b.title;
+    const img = el('img'); img.src = proxyCover(b.coverUrl); img.alt = b.title;
     img.onerror = () => { img.remove(); coverEl.textContent = '📚'; };
     coverEl.appendChild(img);
   } else { coverEl.textContent = '📚'; }
@@ -1774,7 +1785,7 @@ function renderStatRow(sqIdx, modal) {
   const statusKey = a.status === 'read' ? 'read' : 'assigned';
   const cov = el('div', `pool-cover status-${statusKey}`);
   if (book.coverUrl) {
-    const img = el('img'); img.src = book.coverUrl; img.alt = book.title;
+    const img = el('img'); img.src = proxyCover(book.coverUrl); img.alt = book.title;
     img.onerror = () => { cov.textContent = '📚'; };
     cov.appendChild(img);
   } else { cov.textContent = '📚'; }
