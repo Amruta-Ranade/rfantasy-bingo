@@ -502,7 +502,9 @@ function assignedSquareOf(bookId) {
 const DUOLOGY_PAIR = new Set([10, 14]);
 function authorConflictAt(author, excludeBookId, excludeIdx) {
   if (!author) return -1;
-  const norm = s => s.toLowerCase().trim();
+  // Normalize for comparison: strip punctuation and spaces so
+  // "N.K. Jemisin" and "NK Jemisin" match.
+  const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
   const na = norm(author);
   const k = Object.keys(asgn).find(k => {
     const ki = parseInt(k);
@@ -938,9 +940,39 @@ const ORG_AUTHOR_RE   = /\(organization\)|\b(association|society|committee|insti
 const isNonfiction = (title, subjects, author = '') =>
   TITLE_BLOCK_RE.test(title) || NONFICTION_RE.test(subjects) || ORG_AUTHOR_RE.test(author);
 
+// Persistent search cache — survives reloads, protects against GB's daily quota.
+// Stores up to MAX_ENTRIES recent searches with a 7-day TTL, FIFO eviction.
+const SEARCH_CACHE_KEY = 'rfb26_search_cache';
+const SEARCH_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const SEARCH_CACHE_MAX = 100;
+function loadSearchCache() {
+  try { return JSON.parse(localStorage.getItem(SEARCH_CACHE_KEY) || '{}'); } catch { return {}; }
+}
+function saveSearchCache(c) {
+  try { localStorage.setItem(SEARCH_CACHE_KEY, JSON.stringify(c)); }
+  catch { try { localStorage.removeItem(SEARCH_CACHE_KEY); } catch {} }
+}
+function persistSearchResult(key, results) {
+  const c = loadSearchCache();
+  c[key] = { r: results, t: Date.now() };
+  // Evict oldest entries beyond the cap
+  const keys = Object.keys(c);
+  if (keys.length > SEARCH_CACHE_MAX) {
+    keys.sort((a, b) => c[a].t - c[b].t).slice(0, keys.length - SEARCH_CACHE_MAX).forEach(k => delete c[k]);
+  }
+  saveSearchCache(c);
+}
+
 async function searchBooks(q) {
   const key = q.toLowerCase().trim();
   if (cache[key]) return cache[key];
+
+  // Try persistent cache before hitting the network
+  const persistent = loadSearchCache();
+  if (persistent[key] && Date.now() - persistent[key].t < SEARCH_CACHE_TTL_MS) {
+    cache[key] = persistent[key].r;
+    return persistent[key].r;
+  }
 
   // Run both APIs in parallel so we never skip GB covers when OL returns coverless results
   const [olResult, gbResult] = await Promise.allSettled([
@@ -1010,7 +1042,11 @@ async function searchBooks(q) {
   });
   gbBooks.forEach(g => { if (!olBooks.some(b => titlesMatch(g.title, b.title))) merged.push(g); });
 
-  if (merged.length) { cache[key] = merged; return merged; }
+  if (merged.length) {
+    cache[key] = merged;
+    persistSearchResult(key, merged);
+    return merged;
+  }
   // Distinguish: both APIs returned null (network failure) vs both returned empty (genuine no results)
   return (olResult.value === null && gbResult.value === null) ? null : [];
 }
@@ -1455,6 +1491,10 @@ function buildBookDetail() {
       const q = b.author ? `${b.title} ${b.author}` : b.title;
       const norm = s => s.toLowerCase().trim();
       const results = await searchBooks(q);
+      if (results === null) {
+        pickerStatus.textContent = 'Search unavailable — check connection.';
+        return;
+      }
       const match = results?.find(r => norm(r.title) === norm(b.title)) || results?.[0];
       let urls = match?.covers ? [...match.covers] : [];
 
