@@ -692,7 +692,7 @@ function buildModal() {
     } else { coverEl.textContent = '📚'; }
     coverWrap.appendChild(coverEl);
     const ecLink = el('button','modal-edit-cover-link'); ecLink.textContent = 'Edit cover';
-    ecLink.onclick = () => { closeModal(); openBookDetail(book.id); };
+    ecLink.onclick = () => { closeModal(); openBookDetail(book.id, null, true); };
     coverWrap.appendChild(ecLink);
     card.appendChild(coverWrap);
 
@@ -1051,6 +1051,7 @@ let poolFilter   = 'all';   // 'all' | 'unassigned' | 'planned' | 'read'
 let poolQuery    = '';
 let poolDetailId = null;
 let poolDetailAccordionOpen = null; // null = uninitialized; Set of open labels on rebuild
+let poolDetailOpenCoverEdit = false; // one-shot: auto-expand cover editor on next open
 
 function switchTab(tab) {
   document.getElementById('tab-card-panel').style.display = tab === 'card' ? '' : 'none';
@@ -1477,9 +1478,10 @@ function buildAddSheet(sqIdx = null) {
 }
 
 // ── Book detail overlay ───────────────────────────────────────────────────────
-function openBookDetail(bookId, openAccordion) {
+function openBookDetail(bookId, openAccordion, openCoverEdit = false) {
   poolDetailId = bookId;
   poolDetailAccordionOpen = openAccordion ? new Set([openAccordion]) : null;
+  poolDetailOpenCoverEdit = openCoverEdit;
   buildBookDetail();
   document.getElementById('book-overlay').classList.add('open');
 }
@@ -1559,7 +1561,8 @@ function buildBookDetail() {
 
   // ── Inline cover editor (toggled by "Edit cover" link)
   const coverEditSection = el('div', '');
-  coverEditSection.style.cssText = 'display:none; padding: 10px 16px 14px; border-bottom: 1px solid #f0ede8;';
+  coverEditSection.style.cssText = `display:${poolDetailOpenCoverEdit ? 'block' : 'none'}; padding: 10px 16px 14px; border-bottom: 1px solid #f0ede8;`;
+  poolDetailOpenCoverEdit = false;
   const icRow = el('div', 'inline-cover-row');
   const icLbl = el('label'); icLbl.textContent = 'URL:'; icRow.appendChild(icLbl);
   const icIn = el('input', 'inline-cover-input'); icIn.type = 'url'; icIn.value = b.coverUrl || ''; icIn.placeholder = 'Paste image URL';
