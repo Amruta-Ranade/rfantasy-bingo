@@ -359,24 +359,13 @@
     <div class="stat" id="stat-hm"      title="Click to see hard mode completions"><div class="stat-num" id="s-hm">0</div><div class="stat-label">Hard mode</div></div>
     <div class="stat" id="stat-bingo"   title="Click to see bingo lines"><div class="stat-num" id="s-bingo">0</div><div class="stat-label">Bingos</div></div>
   </div>
-  <div class="tab-bar">
-    <button class="tab-btn active" id="tab-card-btn" onclick="switchTab('card')">✨ Bingo Card</button>
-    <button class="tab-btn inactive" id="tab-pool-btn" onclick="switchTab('pool')">📚 My Pool <span class="tab-count" id="pool-count">0</span></button>
-  </div>
-
-  <div id="tab-card-panel">
-    <div class="grid-wrap" id="grid-wrap">
-      <div class="grid" id="grid"></div>
-    </div>
-  </div>
-
-  <div id="tab-pool-panel" style="display:none">
-    <div class="inline-pool-wrap" id="inline-pool"></div>
+  <div class="grid-wrap" id="grid-wrap">
+    <div class="grid" id="grid"></div>
   </div>
   <div class="export-row">
     <button class="btn-io" id="btn-export-json" title="Download a backup of all your data">💾 Backup</button>
     <button class="btn-io" id="btn-import-json" title="Restore from a backup file">📂 Restore</button>
-    <button class="btn-io btn-io-danger" id="btn-clear-board" title="Clear all square assignments (keeps your pool)">🗑 Clear board</button>
+    <button class="btn-io btn-io-danger" id="btn-clear-board" title="Clear all square assignments">🗑 Clear board</button>
   </div>
 </div>
 
@@ -491,7 +480,6 @@ function updateStats() {
   document.getElementById('s-read').textContent    = vals.filter(a => a.status === 'read').length;
   document.getElementById('s-hm').textContent      = vals.filter(a => a.status === 'read' && a.hm).length;
   document.getElementById('s-bingo').textContent   = countBingos();
-  document.getElementById('pool-count').textContent = pool.length;
 }
 function countBingos() {
   const f = i => asgn[i]?.status === 'read';
@@ -848,8 +836,8 @@ function buildModal() {
           onDelete: () => {
             const at = assignedSquareOf(b.id);
             const msg = at >= 0
-              ? `Remove "${b.title}" from your pool? It will also be unassigned from "${SQUARES[at].name}."`
-              : `Remove "${b.title}" from your pool?`;
+              ? `Delete "${b.title}" entirely? It will also be unassigned from "${SQUARES[at].name}."`
+              : `Delete "${b.title}" entirely?`;
             if (!confirm(msg)) return;
             if (at >= 0) { delete asgn[at]; saveAsgn(); }
             pool = pool.filter(x => x.id !== b.id);
@@ -867,7 +855,7 @@ function buildModal() {
     const footer = el('div','modal-footer-row');
     const clearBtn = el('button','modal-btn-clear'); clearBtn.textContent = 'Clear square';
     clearBtn.onclick = () => {
-      if (!confirm(`Clear "${book.title}" from this square? It will stay in your pool.`)) return;
+      if (!confirm(`Clear "${book.title}" from this square?`)) return;
       delete asgn[idx]; saveAsgn(); buildModal(); renderGrid();
     };
     footer.appendChild(clearBtn);
@@ -1042,189 +1030,18 @@ function importData() {
 document.getElementById('btn-export-json').onclick = exportData;
 document.getElementById('btn-import-json').onclick = importData;
 document.getElementById('btn-clear-board').onclick = () => {
-  if (!confirm('Clear all square assignments? Your pool of books will be kept.')) return;
+  if (!confirm('Clear all square assignments? Your books will be kept.')) return;
   asgn = {}; saveAsgn(); renderGrid();
 };
 
-// ── Pool tab ──────────────────────────────────────────────────────────────────
-let poolFilter   = 'all';   // 'all' | 'unassigned' | 'planned' | 'read'
-let poolQuery    = '';
+// ── Book detail state ─────────────────────────────────────────────────────────
 let poolDetailId = null;
 let poolDetailAccordionOpen = null; // null = uninitialized; Set of open labels on rebuild
 let poolDetailOpenCoverEdit = false; // one-shot: auto-expand cover editor on next open
 
-function switchTab(tab) {
-  document.getElementById('tab-card-panel').style.display = tab === 'card' ? '' : 'none';
-  document.getElementById('tab-pool-panel').style.display = tab === 'pool'  ? '' : 'none';
-  document.getElementById('tab-card-btn').className = 'tab-btn ' + (tab === 'card' ? 'active' : 'inactive');
-  document.getElementById('tab-pool-btn').className = 'tab-btn ' + (tab === 'pool' ? 'active' : 'inactive');
-  document.getElementById('btn-clear-board').style.display = tab === 'card' ? '' : 'none';
-  if (tab === 'pool') buildInlinePool();
-}
-
-function poolCounts() {
-  const bookToSquare = {};
-  Object.entries(asgn).forEach(([k, v]) => { bookToSquare[v.bookId] = parseInt(k); });
-  // Apply search query so chip counts match visible results
-  let list = pool;
-  if (poolQuery.trim()) {
-    const q = poolQuery.toLowerCase();
-    list = pool.filter(b => b.title.toLowerCase().includes(q) || (b.author||'').toLowerCase().includes(q));
-  }
-  let unassigned = 0, planned = 0, read = 0;
-  list.forEach(b => {
-    const at = bookToSquare[b.id] ?? -1;
-    if (at < 0) { unassigned++; return; }
-    const st = asgn[at]?.status;
-    if (st === 'assigned') planned++;
-    else if (st === 'read') read++;
-    else unassigned++;
-  });
-  return { all: list.length, unassigned, planned, read };
-}
-
-function getFilteredPool() {
-  // Build bookId→squareIdx map once rather than calling assignedSquareOf per book
-  const bookToSquare = {};
-  Object.entries(asgn).forEach(([k, v]) => { bookToSquare[v.bookId] = parseInt(k); });
-
-  let list = [...pool];
-  if (poolFilter !== 'all') {
-    list = list.filter(b => {
-      const at = bookToSquare[b.id] ?? -1;
-      if (poolFilter === 'unassigned') return at < 0;
-      if (at < 0) return false;
-      const st = asgn[at]?.status;
-      return poolFilter === 'planned' ? st === 'assigned' : st === 'read';
-    });
-  }
-  if (poolQuery.trim()) {
-    const q = poolQuery.toLowerCase();
-    list = list.filter(b => b.title.toLowerCase().includes(q) || (b.author||'').toLowerCase().includes(q));
-  }
-  return list;
-}
-
-function renderPoolList(listEl) {
-  const filtered = getFilteredPool();
-  if (!filtered.length) {
-    const empty = el('div', 'pool-empty-state');
-    empty.textContent = pool.length === 0 ? 'Add books to start planning your bingo — assign them to squares on the card.' : 'No books match this filter.';
-    listEl.appendChild(empty); return;
-  }
-  // Pre-compute assignment map for the list render pass
-  const bookToSquare = {};
-  Object.entries(asgn).forEach(([k, v]) => { bookToSquare[v.bookId] = parseInt(k); });
-  filtered.forEach(b => {
-    const assignedAt = bookToSquare[b.id] ?? -1;
-    const status     = assignedAt >= 0 ? (asgn[assignedAt]?.status || 'assigned') : null;
-    const statusKey  = status === 'read' ? 'read' : status === 'assigned' ? 'assigned' : 'unassigned';
-
-    const row = el('div', 'pool-row');
-    row.onclick = () => openBookDetail(b.id);
-
-    // Cover with status-tinted gradient placeholder
-    const cov = el('div', `pool-cover status-${statusKey}`);
-    if (b.coverUrl) {
-      const img = el('img'); img.src = proxyCover(b.coverUrl); img.alt = b.title;
-      img.onerror = () => { img.remove(); cov.textContent = '📚'; };
-      cov.appendChild(img);
-    } else { cov.textContent = '📚'; }
-    row.appendChild(cov);
-
-    // Info: title (Newsreader) + author + meta
-    const info = el('div', 'pool-info');
-    const titleEl = el('div', 'pool-book-title'); titleEl.textContent = b.title; info.appendChild(titleEl);
-    if (b.author) { const au = el('div', 'pool-book-author'); au.textContent = b.author; info.appendChild(au); }
-    const meta = el('div', 'pool-book-meta');
-    if (assignedAt >= 0) {
-      const sqSpan = el('span', 'pool-meta-sq'); sqSpan.textContent = SQUARES[assignedAt].name; meta.appendChild(sqSpan);
-    } else {
-      const noSq = el('span'); noSq.textContent = 'Not assigned'; noSq.style.fontStyle = 'italic'; meta.appendChild(noSq);
-    }
-    const qualN = (b.qualifies || []).length;
-    if (qualN > 0) {
-      const qSpan = el('span', 'pool-meta-qual'); qSpan.textContent = `Qualifies for ${qualN} square${qualN === 1 ? '' : 's'}`; meta.appendChild(qSpan);
-    }
-    if (assignedAt >= 0 && b.author) {
-      const conflictAt = authorConflictAt(b.author, b.id, assignedAt);
-      if (conflictAt >= 0) {
-        const warn = el('span', 'cand-author-warn');
-        warn.textContent = `⚠ Same author as "${SQUARES[conflictAt].name}"`;
-        meta.appendChild(warn);
-      }
-    }
-    info.appendChild(meta);
-    row.appendChild(info);
-
-    // Status badge
-    const badgeLabel = statusKey === 'read' ? 'Read' : statusKey === 'assigned' ? 'Planned' : 'Unassigned';
-    const badge = el('span', `statebadge s-${statusKey}`);
-    const dot = el('span', 'dot'); badge.appendChild(dot);
-    badge.appendChild(document.createTextNode(badgeLabel));
-    row.appendChild(badge);
-
-    listEl.appendChild(row);
-  });
-}
-
-function buildInlinePool() {
-  const wrap = document.getElementById('inline-pool');
-  wrap.innerHTML = '';
-
-  // ── Toolbar: pill search + add button
-  const toolbar = el('div', 'pool-toolbar');
-  const searchPill = el('div', 'pool-search-pill');
-  const si = el('span', 'pool-search-icon'); si.textContent = '🔍';
-  const sin = el('input', 'pool-search-input');
-  sin.type = 'text'; sin.placeholder = 'Search title or author…'; sin.value = poolQuery;
-  sin.oninput = () => { poolQuery = sin.value; refreshList(); };
-  searchPill.appendChild(si); searchPill.appendChild(sin);
-  toolbar.appendChild(searchPill);
-  const addToggle = el('button', 'pool-add-toggle');
-  addToggle.innerHTML = '＋ Add a book';
-  addToggle.onclick = () => openAddSheet();
-  toolbar.appendChild(addToggle);
-  wrap.appendChild(toolbar);
-
-  // ── Filter chips
-  const counts = poolCounts();
-  const chipsEl = el('div', 'pool-chips');
-  [['all','All'], ['unassigned','Unassigned'], ['planned','Planned'], ['read','Read']].forEach(([id, label]) => {
-    const chip = el('button', `pool-chip${poolFilter === id ? ' active' : ''}`);
-    chip.appendChild(document.createTextNode(label + ' '));
-    const ct = el('span', 'pool-chip-ct'); ct.textContent = counts[id];
-    chip.appendChild(ct);
-    chip.onclick = () => { poolFilter = id; buildInlinePool(); };
-    chipsEl.appendChild(chip);
-  });
-  wrap.appendChild(chipsEl);
-
-  // ── Book list
-  let listEl = el('div', 'pool-list');
-  renderPoolList(listEl);
-  wrap.appendChild(listEl);
-
-  function refreshList() {
-    const fresh = el('div', 'pool-list');
-    renderPoolList(fresh);
-    listEl.replaceWith(fresh);
-    listEl = fresh; // keep reference pointing at the live node
-  }
-
-  // ── Clear pool
-  if (pool.length) {
-    const footer = el('div', 'pool-footer');
-    const clearBtn = el('button', 'btn-clear-pool'); clearBtn.textContent = '🗑 Clear pool';
-    clearBtn.onclick = () => {
-      if (!confirm('Remove all books from your pool? Square assignments will also be cleared.')) return;
-      pool = []; asgn = {}; savePool(); saveAsgn(); poolFilter = 'all'; poolQuery = '';
-      renderGrid(); buildInlinePool(); updateStats();
-    };
-    footer.appendChild(clearBtn);
-    wrap.appendChild(footer);
-  }
-}
+// Pool tab feature removed — see pool-feature-backup.md to restore.
+// buildInlinePool is kept as a no-op so existing callers don't error.
+function buildInlinePool() {}
 
 // ── Add-book sheet ────────────────────────────────────────────────────────────
 function openAddSheet(sqIdx = null) {
@@ -1470,7 +1287,7 @@ function buildAddSheet(sqIdx = null) {
     } else {
       closeAddSheet();
     }
-    showToast(`✓ "${entry.title}" added to pool`);
+    showToast(`✓ "${entry.title}" added`);
   };
 
   // Focus search after open animation
@@ -1716,7 +1533,7 @@ function buildBookDetail() {
       unassignBtn.style.cssText = 'border-color:#e87b6e;color:#c0392b;margin-left:6px;';
       unassignBtn.onclick = (e) => {
         e.stopPropagation();
-        if (a.status === 'read' && !confirm(`Remove "${b.title}" from this square? It will stay in your pool.`)) return;
+        if (a.status === 'read' && !confirm(`Remove "${b.title}" from this square?`)) return;
         const listSt = tagList.scrollTop;
         delete asgn[assignedAt]; saveAsgn();
         buildBookDetail();
@@ -1779,8 +1596,8 @@ function buildBookDetail() {
   const delBtn = el('button', 'bd-btn-delete'); delBtn.textContent = 'Delete';
   delBtn.onclick = () => {
     if (!confirm(assignedAt >= 0
-      ? `Remove "${b.title}" from your pool? It will also be unassigned from "${SQUARES[assignedAt].name}".`
-      : `Remove "${b.title}" from your pool?`)) return;
+      ? `Delete "${b.title}" entirely? It will also be unassigned from "${SQUARES[assignedAt].name}".`
+      : `Delete "${b.title}" entirely?`)) return;
     if (assignedAt >= 0) { delete asgn[assignedAt]; saveAsgn(); }
     pool = pool.filter(x => x.id !== b.id);
     savePool(); closeBookDetail(); renderGrid(); buildInlinePool(); updateStats();
