@@ -1563,23 +1563,71 @@ function buildBookDetail() {
   const coverEditSection = el('div', '');
   coverEditSection.style.cssText = `display:${poolDetailOpenCoverEdit ? 'block' : 'none'}; padding: 10px 16px 14px; border-bottom: 1px solid #f0ede8;`;
   poolDetailOpenCoverEdit = false;
-  const icRow = el('div', 'inline-cover-row');
-  const icLbl = el('label'); icLbl.textContent = 'URL:'; icRow.appendChild(icLbl);
+
+  // Cover picker strip (populated async from OL + GB)
+  const pickerLbl = el('div', 'cover-picker-label'); pickerLbl.textContent = 'Pick a cover:';
+  pickerLbl.style.marginBottom = '6px';
+  const coversStrip = el('div', 'cover-picker-strip');
+  const pickerStatus = el('div'); pickerStatus.style.cssText = 'font-size:11px;color:#888;margin-bottom:6px;'; pickerStatus.textContent = 'Loading covers…';
+  coverEditSection.appendChild(pickerLbl);
+  coverEditSection.appendChild(pickerStatus);
+  coverEditSection.appendChild(coversStrip);
+
+  const icRow = el('div', 'inline-cover-row'); icRow.style.marginTop = '10px';
+  const icLbl = el('label'); icLbl.textContent = 'Or paste URL:'; icRow.appendChild(icLbl);
   const icIn = el('input', 'inline-cover-input'); icIn.type = 'url'; icIn.value = b.coverUrl || ''; icIn.placeholder = 'Paste image URL';
   const icThumb = el('img', 'inline-cover-thumb' + (b.coverUrl ? ' show' : ''));
-  icThumb.src = b.coverUrl || ''; icThumb.alt = '';
+  icThumb.src = b.coverUrl ? proxyCover(b.coverUrl) : ''; icThumb.alt = '';
   icIn.addEventListener('input', () => {
     const u = icIn.value.trim();
     if (u) { icThumb.src = u; icThumb.className = 'inline-cover-thumb show'; icThumb.onerror = () => icThumb.classList.remove('show'); }
     else { icThumb.className = 'inline-cover-thumb'; }
+    coversStrip.querySelectorAll('.cover-opt').forEach(x => x.classList.remove('sel'));
   });
   icRow.appendChild(icIn); icRow.appendChild(icThumb);
   coverEditSection.appendChild(icRow);
   const saveBtn = el('button', 'btn-save-tags'); saveBtn.textContent = 'Save cover';
   saveBtn.style.marginTop = '8px';
-  saveBtn.onclick = () => { b.coverUrl = icIn.value.trim() || null; savePool(); buildBookDetail(); buildInlinePool(); };
+  saveBtn.onclick = () => { b.coverUrl = icIn.value.trim() || null; savePool(); buildBookDetail(); buildInlinePool(); renderGrid(); };
   coverEditSection.appendChild(saveBtn);
   modal.appendChild(coverEditSection);
+
+  // Async: load cover options from OL + GB
+  (async () => {
+    try {
+      const q = b.author ? `${b.title} ${b.author}` : b.title;
+      const results = await searchBooks(q);
+      const norm = s => s.toLowerCase().trim();
+      const match = results?.find(r => norm(r.title) === norm(b.title)) || results?.[0];
+      let urls = match?.covers ? [...match.covers] : [];
+      if (match?.olWorkKey) {
+        const data = await fetch(`https://openlibrary.org${match.olWorkKey}/editions.json?limit=20`)
+          .then(r => r.ok ? r.json() : null).catch(() => null);
+        if (data?.entries?.length) {
+          const ids = data.entries.flatMap(e => e.covers || []).filter(id => id > 0);
+          urls.push(...[...new Set(ids)].map(id => `https://covers.openlibrary.org/b/id/${id}-L.jpg`));
+        }
+      }
+      urls = [...new Set(urls)].slice(0, 12);
+      pickerStatus.remove();
+      if (!urls.length) { coversStrip.innerHTML = '<div style="font-size:11px;color:#888;">No cover options found.</div>'; return; }
+      urls.forEach(url => {
+        const img = el('img', 'cover-opt' + (url === b.coverUrl ? ' sel' : ''));
+        img.src = proxyCover(url); img.alt = '';
+        img.onerror = () => img.remove();
+        img.onload = () => { if (img.naturalWidth < 60 || img.naturalHeight < 80) img.remove(); };
+        img.onclick = () => {
+          coversStrip.querySelectorAll('.cover-opt').forEach(x => x.classList.remove('sel'));
+          img.classList.add('sel');
+          icIn.value = url;
+          icThumb.src = proxyCover(url); icThumb.className = 'inline-cover-thumb show';
+        };
+        coversStrip.appendChild(img);
+      });
+    } catch {
+      pickerStatus.textContent = 'Failed to load covers.';
+    }
+  })();
 
   // ── Hard mode + stars (only when read)
   if (a && status === 'read') {
