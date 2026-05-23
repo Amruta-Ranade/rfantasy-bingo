@@ -8,7 +8,8 @@
 
 // Allowed origins. Add custom domains here if you ever move off GitHub Pages.
 const ALLOWED_ORIGINS = [
-  'https://amruta-ranade.github.io',
+  'https://rfantasy-bingo-2026.pages.dev',
+  'https://amruta-ranade.github.io', // legacy — kept while transitioning
 ];
 
 const ALLOWED_COVER_HOSTS = ['books.google.com', 'covers.openlibrary.org'];
