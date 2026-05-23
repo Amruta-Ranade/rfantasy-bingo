@@ -1111,7 +1111,7 @@ async function downloadCard() {
   btn.disabled = true;
 
   try {
-    const W = 1080, H = 1280;
+    const W = 1080, H = 1500;
     const canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
@@ -1143,19 +1143,21 @@ async function downloadCard() {
     ctx.fillStyle = 'rgba(255,255,255,0.88)';
     ctx.fillText(`${planned} Planned · ${read} Read · ${hm} Hard Mode · ${bingos} Bingo${bingos === 1 ? '' : 's'}`, W / 2, 120);
 
-    // Grid container
+    // Grid container — cells are portrait (1:1.25) to better fit book covers
     const gridPad = 14;
     const gridW = 1000;
     const gridX = (W - gridW) / 2;
     const gridY = 160;
+    const gap = 8;
+    const innerW = gridW - gridPad * 2;
+    const cellW = (innerW - gap * 4) / 5;
+    const cellH = cellW * 1.25;
+    const gridH = gridPad * 2 + cellH * 5 + gap * 4;
     ctx.fillStyle = '#5b3fa0';
     ctx.beginPath();
-    ctx.roundRect(gridX, gridY, gridW, gridW, 20);
+    ctx.roundRect(gridX, gridY, gridW, gridH, 20);
     ctx.fill();
-
-    const innerW = gridW - gridPad * 2;
-    const gap = 8;
-    const cell = (innerW - gap * 4) / 5;
+    const cell = cellW; // alias for legacy width references below
 
     // Pre-load all covers in parallel
     const bookById = {};
@@ -1170,8 +1172,8 @@ async function downloadCard() {
     SQUARES.forEach((sq, i) => {
       const r = Math.floor(i / 5);
       const c = i % 5;
-      const x = gridX + gridPad + c * (cell + gap);
-      const y = gridY + gridPad + r * (cell + gap);
+      const x = gridX + gridPad + c * (cellW + gap);
+      const y = gridY + gridPad + r * (cellH + gap);
       const a = asgn[i];
       const status = a ? a.status : 'empty';
       const isGold = i % 2 === 0;
@@ -1183,11 +1185,11 @@ async function downloadCard() {
       else                       fill = isGold ? '#f5b731' : '#d4c98a';
       ctx.fillStyle = fill;
       ctx.beginPath();
-      ctx.roundRect(x, y, cell, cell, 10);
+      ctx.roundRect(x, y, cellW, cellH, 10);
       ctx.fill();
 
-      // Cover area (top 65%)
-      const coverH = cell * 0.65;
+      // Cover area (top ~72% — leaves ~66px body to match web layout)
+      const coverH = cellH * 0.72;
       const img = covers[i];
       ctx.save();
       ctx.beginPath();
@@ -1231,9 +1233,9 @@ async function downloadCard() {
         ctx.restore();
       }
 
-      // Body (bottom 35%) — square name + stars
+      // Body (bottom ~28%) — square name + stars
       const bodyY = y + coverH;
-      const bodyH = cell - coverH;
+      const bodyH = cellH - coverH;
       ctx.fillStyle = 'rgba(0,0,0,0.12)';
       ctx.beginPath();
       ctx.roundRect(x, bodyY, cell, bodyH, [0, 0, 10, 10]);
