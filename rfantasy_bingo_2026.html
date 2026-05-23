@@ -817,7 +817,7 @@ function buildModal() {
       removeBtn.onclick = (e) => {
         e.stopPropagation();
         b.qualifies = (b.qualifies || []).filter(q => q !== idx);
-        savePool(); buildModal(); renderGrid(); buildInlinePool();
+        savePool(); buildModal(); renderGrid();
       };
 
       if (isUsed) {
@@ -1053,7 +1053,7 @@ function importData() {
         pool = imported.pool; asgn = imported.asgn;
         savePool(); saveAsgn();
         localStorage.setItem(VERSION_KEY, String(SCHEMA_VERSION));
-        renderGrid(); buildInlinePool(); updateStats();
+        renderGrid(); updateStats();
       } catch {
         alert('Could not read file — make sure it\'s a valid bingo backup.');
       }
@@ -1076,8 +1076,6 @@ let poolDetailAccordionOpen = null; // null = uninitialized; Set of open labels 
 let poolDetailOpenCoverEdit = false; // one-shot: auto-expand cover editor on next open
 
 // Pool tab feature removed — see pool-feature-backup.md to restore.
-// buildInlinePool is kept as a no-op so existing callers don't error.
-function buildInlinePool() {}
 
 // ── Add-book sheet ────────────────────────────────────────────────────────────
 function openAddSheet(sqIdx = null) {
@@ -1311,7 +1309,6 @@ function buildAddSheet(sqIdx = null) {
       pool.push(entry);
     }
     savePool(); updateStats();
-    if (sqIdx === null) buildInlinePool();
     if (sqIdx !== null) {
       // Auto-assign if the square was empty
       if (!asgn[sqIdx]) {
@@ -1410,7 +1407,7 @@ function buildBookDetail() {
     rdBtn.textContent = status === 'read' ? '✓ Read' : '✓ Mark as Read';
     rdBtn.onclick = () => {
       asgn[assignedAt].status = status === 'read' ? 'assigned' : 'read';
-      saveAsgn(); buildBookDetail(); renderGrid(); buildInlinePool();
+      saveAsgn(); buildBookDetail(); renderGrid();
     };
     const actions = el('div', 'modal-book-actions');
     actions.appendChild(rdBtn); hdrInfo.appendChild(actions);
@@ -1449,7 +1446,7 @@ function buildBookDetail() {
   coverEditSection.appendChild(icRow);
   const saveBtn = el('button', 'btn-save-tags'); saveBtn.textContent = 'Save cover';
   saveBtn.style.marginTop = '8px';
-  saveBtn.onclick = () => { b.coverUrl = icIn.value.trim() || null; savePool(); buildBookDetail(); buildInlinePool(); renderGrid(); };
+  saveBtn.onclick = () => { b.coverUrl = icIn.value.trim() || null; savePool(); buildBookDetail(); renderGrid(); };
   coverEditSection.appendChild(saveBtn);
   modal.appendChild(coverEditSection);
 
@@ -1585,7 +1582,7 @@ function buildBookDetail() {
           const newList = document.querySelector('#book-modal .sq-tag-list');
           if (newList) newList.scrollTop = listSt;
         }));
-        renderGrid(); buildInlinePool();
+        renderGrid();
       };
       row.appendChild(unassignBtn);
     } else {
@@ -1602,7 +1599,7 @@ function buildBookDetail() {
             const newList = document.querySelector('#book-modal .sq-tag-list');
             if (newList) newList.scrollTop = listSt;
           }));
-          renderGrid(); buildInlinePool();
+          renderGrid();
         };
         return ab;
       };
@@ -1620,7 +1617,7 @@ function buildBookDetail() {
           row.classList.add('on');
           row.appendChild(makeAssignBtn());
         }
-        savePool(); buildInlinePool(); renderGrid();
+        savePool(); renderGrid();
         // Update badge count in place — no modal rebuild
         const accLeft = tagsBody.closest('.bd-acc-item')?.querySelector('.bd-acc-left');
         let countBadge = accLeft?.querySelector('.bd-acc-count');
@@ -1644,7 +1641,7 @@ function buildBookDetail() {
       : `Delete "${b.title}" entirely?`)) return;
     if (assignedAt >= 0) { delete asgn[assignedAt]; saveAsgn(); }
     pool = pool.filter(x => x.id !== b.id);
-    savePool(); closeBookDetail(); renderGrid(); buildInlinePool(); updateStats();
+    savePool(); closeBookDetail(); renderGrid(); updateStats();
   };
   footer.appendChild(delBtn);
 

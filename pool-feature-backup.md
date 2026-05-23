@@ -6,7 +6,18 @@ and search-by-title. Removed because most users interact with books through
 squares directly, and the tab duplicated information already visible on the card.
 
 If restoring: paste each section back into `rfantasy_bingo_2026.html` at the
-indicated location and remove the no-op stub for `buildInlinePool`.
+indicated location. You'll also need to re-add `buildInlinePool();` after
+these state-changing actions so the list refreshes:
+
+- After removing a candidate from a square (in `buildModal`)
+- After clearing the board (`btn-clear-board` handler)
+- After adding a book from the pool context (`addBtn.onclick` in `buildAddSheet`: `if (sqIdx === null) buildInlinePool();`)
+- After toggling read status in book detail
+- After saving a cover in book detail
+- After unassigning a square in book detail
+- After assigning a square in book detail
+- After toggling a qualifies tag in book detail
+- After deleting a book in book detail footer
 
 ---
 
