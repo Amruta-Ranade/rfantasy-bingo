@@ -1625,16 +1625,18 @@ function buildBookDetail() {
       urls = [...new Set(urls)].slice(0, 12);
       pickerStatus.remove();
       if (!urls.length) { coversStrip.innerHTML = '<div style="font-size:11px;color:#888;">No cover options found.</div>'; return; }
+      // Use -M.jpg thumbnails for OL covers in the picker (faster load); keep -L.jpg for save
+      const thumbUrl = u => u.includes('covers.openlibrary.org') && u.endsWith('-L.jpg') ? u.replace('-L.jpg', '-M.jpg') : u;
       urls.forEach(url => {
         const img = el('img', 'cover-opt' + (url === b.coverUrl ? ' sel' : ''));
-        img.src = proxyCover(url); img.alt = '';
+        img.src = proxyCover(thumbUrl(url)); img.alt = '';
         img.onerror = () => img.remove();
         img.onload = () => { if (img.naturalWidth < 60 || img.naturalHeight < 80) img.remove(); };
         img.onclick = () => {
           coversStrip.querySelectorAll('.cover-opt').forEach(x => x.classList.remove('sel'));
           img.classList.add('sel');
           icIn.value = url;
-          icThumb.src = proxyCover(url); icThumb.className = 'inline-cover-thumb show';
+          icThumb.src = proxyCover(thumbUrl(url)); icThumb.className = 'inline-cover-thumb show';
         };
         coversStrip.appendChild(img);
       });
