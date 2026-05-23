@@ -1596,10 +1596,12 @@ function buildBookDetail() {
   (async () => {
     try {
       const q = b.author ? `${b.title} ${b.author}` : b.title;
-      const results = await searchBooks(q);
       const norm = s => s.toLowerCase().trim();
+      const results = await searchBooks(q);
       const match = results?.find(r => norm(r.title) === norm(b.title)) || results?.[0];
       let urls = match?.covers ? [...match.covers] : [];
+
+      // Pull more OL editions if we have a work key
       if (match?.olWorkKey) {
         const data = await fetch(`https://openlibrary.org${match.olWorkKey}/editions.json?limit=20`)
           .then(r => r.ok ? r.json() : null).catch(() => null);
@@ -1608,6 +1610,18 @@ function buildBookDetail() {
           urls.push(...[...new Set(ids)].map(id => `https://covers.openlibrary.org/b/id/${id}-L.jpg`));
         }
       }
+
+      // Targeted GB search for more editions
+      const gbData = await fetch(gbUrl(q, 5)).then(r => r.ok ? r.json() : null).catch(() => null);
+      if (gbData?.items?.length) {
+        gbData.items.forEach(item => {
+          const info = item.volumeInfo || {};
+          if (info.title && !norm(info.title).includes(norm(b.title)) && !norm(b.title).includes(norm(info.title))) return;
+          const c = fixUrl((info.imageLinks || {}).thumbnail);
+          if (c) urls.push(c);
+        });
+      }
+
       urls = [...new Set(urls)].slice(0, 12);
       pickerStatus.remove();
       if (!urls.length) { coversStrip.innerHTML = '<div style="font-size:11px;color:#888;">No cover options found.</div>'; return; }
