@@ -540,16 +540,40 @@ function renderGrid() {
   const grid = document.getElementById('grid');
   grid.innerHTML = '';
 
-  // Build reverse index once: squareIdx → qualifying books (O(pool × qualifies))
-  // instead of calling candidatesFor(i) 25× (each pool.filter = O(pool))
+  // Precompute three indexes so the 25-square loop stays O(squares) instead of
+  // doing repeated O(pool) finds:
+  //   candsBySquare: squareIdx → qualifying books
+  //   bookById:      bookId → book (replaces pool.find per square)
+  //   conflictsByAuthor: normalizedAuthor → assigned squareIdxs (replaces O(pool×asgn) per call)
+  const normAuthor = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
   const candsBySquare = {};
   pool.forEach(b => (b.qualifies || []).forEach(qi => {
     (candsBySquare[qi] = candsBySquare[qi] || []).push(b);
   }));
+  const bookById = {};
+  pool.forEach(b => { bookById[b.id] = b; });
+  const conflictsByAuthor = {};
+  Object.entries(asgn).forEach(([k, v]) => {
+    const b = bookById[v.bookId];
+    if (!b?.author) return;
+    const na = normAuthor(b.author);
+    (conflictsByAuthor[na] = conflictsByAuthor[na] || []).push({ idx: parseInt(k), bookId: b.id });
+  });
+  const findConflict = (author, excludeBookId, excludeIdx) => {
+    if (!author) return -1;
+    const matches = conflictsByAuthor[normAuthor(author)] || [];
+    for (const m of matches) {
+      if (m.idx === excludeIdx) continue;
+      if (m.bookId === excludeBookId) continue;
+      if (DUOLOGY_PAIR.has(m.idx) && DUOLOGY_PAIR.has(excludeIdx)) continue;
+      return m.idx;
+    }
+    return -1;
+  };
 
   SQUARES.forEach((sq, i) => {
     const a      = asgn[i] || null;
-    const book   = a ? pool.find(b => b.id === a.bookId) : null;
+    const book   = a ? bookById[a.bookId] : null;
     const status = a ? a.status : 'empty';
     const color  = i % 2 === 0 ? 'gold' : 'cream';
     const cands  = candsBySquare[i] || [];
@@ -582,7 +606,7 @@ function renderGrid() {
 
     // Conflict stamp across cover
     if (book?.author) {
-      const conflictAt = authorConflictAt(book.author, book.id, i);
+      const conflictAt = findConflict(book.author, book.id, i);
       if (conflictAt >= 0) {
         div.classList.add('author-conflict');
         const badge = el('div','sq-conflict'); badge.textContent = '⚠ conflict';
