@@ -241,7 +241,9 @@
   .btn-io-danger:hover { background: rgba(180,40,30,0.2); color: #fff; }
 
   /* ── Action row (backup / restore / clear) ── */
-  .export-row { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 0.75rem; }
+  .export-row { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 0.75rem; flex-wrap: wrap; }
+  a.btn-io { text-decoration: none; display: inline-flex; align-items: center; }
+
 
   .pool-add-toggle { display: inline-flex; align-items: center; gap: 6px; border: none; background: #f4a93a; color: #2c2456; font-family: inherit; font-weight: 700; font-size: 13px; padding: 9px 16px; border-radius: 999px; cursor: pointer; white-space: nowrap; transition: transform 0.12s, filter 0.12s; flex-shrink: 0; }
   .pool-add-toggle:hover { filter: brightness(1.07); transform: translateY(-1px); }
@@ -296,6 +298,35 @@
   .pool-book:last-child { border-bottom: none; }
 
   @media (max-width: 520px) { .grid { gap: 4px; } .sq-name { font-size: 10px; } .bingo-header h1 { font-size: 28px; } }
+
+  /* ── Help FAB ── */
+  .btn-help-fab { position: fixed; top: 16px; right: 16px; z-index: 900; width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.25); border: 1.5px solid rgba(255,255,255,0.55); color: #fff; font-size: 17px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(6px); transition: background 0.15s, transform 0.12s; font-family: inherit; box-shadow: 0 2px 10px rgba(0,0,0,0.18); }
+  .btn-help-fab:hover { background: rgba(255,255,255,0.38); transform: scale(1.08); }
+
+  /* ── Help panel ── */
+  .help-scrim { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 1019; }
+  .help-scrim.open { display: block; }
+  .help-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 340px; max-width: 100vw; background: #fff; box-shadow: -4px 0 32px rgba(0,0,0,0.2); z-index: 1020; transform: translateX(100%); transition: transform 0.28s cubic-bezier(0.32,0.72,0,1); display: flex; flex-direction: column; overflow: hidden; }
+  .help-panel.open { transform: translateX(0); }
+  .help-panel-hdr { display: flex; align-items: center; justify-content: space-between; padding: 18px 18px 14px; border-bottom: 1px solid #ebe9e4; flex-shrink: 0; background: #5b3fa0; }
+  .help-panel-hdr h2 { font-size: 17px; font-weight: 800; color: #fff; margin: 0; }
+  .help-panel-close { background: rgba(255,255,255,0.18); border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0; }
+  .help-panel-close:hover { background: rgba(255,255,255,0.3); }
+  .help-panel-body { overflow-y: auto; padding: 18px; flex: 1; }
+  .help-section { margin-bottom: 22px; }
+  .help-section:last-child { margin-bottom: 0; }
+  .help-section-title { font-size: 11px; font-weight: 800; color: #5b3fa0; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; }
+  .help-item { margin-bottom: 9px; padding-left: 10px; border-left: 2px solid #e8e4f4; }
+  .help-item:last-child { margin-bottom: 0; }
+  .help-text { font-size: 13px; color: #444; line-height: 1.5; }
+  .help-text strong { color: #2a1040; font-weight: 700; }
+  .help-chip { display: inline-block; border-radius: 4px; padding: 1px 7px; font-size: 11px; font-weight: 700; vertical-align: middle; }
+  .help-chip.gold     { background: #f5b731; color: #2a1040; }
+  .help-chip.blue     { background: #2abcf5; color: #0a4a66; }
+  .help-chip.green    { background: #82b840; color: #1e3d08; }
+  .help-sep { height: 1px; background: #ebe9e4; margin: 18px 0; }
+  .btn-help { background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.35); border-radius: 8px; color: #fff; font-size: 12px; font-weight: 700; padding: 6px 12px; cursor: pointer; transition: background 0.15s; font-family: inherit; }
+  .btn-help:hover { background: rgba(255,255,255,0.32); }
 </style>
 </head>
 <body>
@@ -334,6 +365,45 @@
 
 <div class="overlay" id="book-overlay">
   <div class="modal" id="book-modal" role="dialog" aria-modal="true"></div>
+</div>
+
+<button class="btn-help-fab" id="btn-help" title="How to use this app">?</button>
+
+<div class="help-scrim" id="help-scrim"></div>
+<div class="help-panel" id="help-panel" role="dialog" aria-modal="true" aria-label="How to use">
+  <div class="help-panel-hdr">
+    <h2>How to use</h2>
+    <button class="help-panel-close" id="help-panel-close" aria-label="Close">✕</button>
+  </div>
+  <div class="help-panel-body">
+
+    <div class="help-section">
+      <div class="help-section-title">How it works</div>
+      <div class="help-item"><div class="help-text"><strong>Click any square</strong> to open it and search for a book to plan or track for that category.</div></div>
+      <div class="help-item"><div class="help-text">Color key: <span class="help-chip gold">gold</span> for empty squares, <span class="help-chip blue">blue</span> for planned books, and <span class="help-chip green">green</span> for finished books.</div></div>
+      <div class="help-item"><div class="help-text">Tap <strong>Mark as Read</strong> when you finish a book. You can rate it 1–5 stars from the same view.</div></div>
+      <div class="help-item"><div class="help-text">Each square has a <strong>Hard Mode</strong> rule. Check it off when marking a book as read if you met it.</div></div>
+      <div class="help-item"><div class="help-text">The same author can't fill two different squares (Duology Part 1 &amp; 2 excepted). Conflicts show a red warning on the grid.</div></div>
+    </div>
+
+    <div class="help-sep"></div>
+
+    <div class="help-section">
+      <div class="help-section-title">Your data</div>
+      <div class="help-item"><div class="help-text"><strong>Progress is saved to this browser only.</strong> Clearing your browser data, switching browsers, or using a different device will erase it.</div></div>
+      <div class="help-item"><div class="help-text">Use <strong>Backup</strong> regularly to download a copy of your data. <strong>Restore</strong> loads it back if anything goes wrong.</div></div>
+      <div class="help-item"><div class="help-text"><strong>Save as image</strong> exports a shareable card, great for posting to r/Fantasy.</div></div>
+      <div class="help-item"><div class="help-text">Click any stat at the top (Planned, Read, Hard Mode, Bingos) to see which books are in that group.</div></div>
+    </div>
+
+    <div class="help-sep"></div>
+
+    <div class="help-section">
+      <div class="help-section-title">The challenge</div>
+      <div class="help-item"><div class="help-text"><a href="https://www.reddit.com/r/Fantasy/comments/1s9n3e6/official_rfantasy_2026_book_bingo_challenge/" target="_blank" rel="noopener" style="color:#5b3fa0;font-weight:600;">Official r/Fantasy 2026 Bingo Challenge ↗</a> with rules, square definitions, and the community discussion thread.</div></div>
+    </div>
+
+  </div>
 </div>
 
 <div class="pool-overlay" id="stats-overlay">
@@ -1975,6 +2045,22 @@ document.getElementById('stat-planned').onclick = () => openStats('planned');
 document.getElementById('stat-read').onclick    = () => openStats('read');
 document.getElementById('stat-hm').onclick      = () => openStats('hm');
 document.getElementById('stat-bingo').onclick   = () => openStats('bingo');
+
+// ── Help panel ───────────────────────────────────────────────────────────────
+function openHelp() {
+  document.getElementById('help-scrim').classList.add('open');
+  document.getElementById('help-panel').classList.add('open');
+}
+function closeHelp() {
+  document.getElementById('help-scrim').classList.remove('open');
+  document.getElementById('help-panel').classList.remove('open');
+}
+document.getElementById('btn-help').onclick = openHelp;
+document.getElementById('help-panel-close').onclick = closeHelp;
+document.getElementById('help-scrim').addEventListener('click', closeHelp);
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('help-panel').classList.contains('open')) closeHelp();
+});
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 renderGrid();
