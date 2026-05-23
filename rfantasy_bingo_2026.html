@@ -31,17 +31,6 @@
   .stat-num { font-size: 18px; font-weight: 700; color: #fff; line-height: 1; }
   .stat-label { font-size: 10px; color: rgba(255,255,255,0.75); margin-top: 3px; }
 
-  /* ── Underline tabs ── */
-  .tab-bar { display: flex; gap: 0; border-bottom: 2px solid rgba(255,255,255,0.2); margin-bottom: 1.25rem; }
-  .tab-btn { flex: 1; padding: 10px 12px 11px; border: none; background: transparent; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; color: rgba(255,255,255,0.6); position: relative; transition: color 0.18s; }
-  .tab-btn.active { color: #fff; }
-  .tab-btn.active::after { content: ''; position: absolute; bottom: -2px; left: 10%; right: 10%; height: 2px; background: #fff; border-radius: 2px; }
-  .tab-btn.inactive:hover { color: rgba(255,255,255,0.85); }
-  .tab-count { border-radius: 20px; padding: 1px 8px; font-size: 11px; font-weight: 700; }
-  .tab-btn.active   .tab-count { background: rgba(255,255,255,0.25); color: #fff; }
-  .tab-btn.inactive .tab-count { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.6); }
-  /* Inline pool */
-  .inline-pool-wrap { background: #fff; border-radius: 14px; overflow: hidden; margin-bottom: 1.25rem; }
 
   /* ── Grid ── */
   .grid-wrap { background: #5b3fa0; border-radius: 20px; padding: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
@@ -254,12 +243,6 @@
   /* ── Action row (backup / restore / clear) ── */
   .export-row { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 0.75rem; }
 
-  /* ── Pool toolbar ── */
-  .pool-toolbar { display: flex; gap: 10px; align-items: center; padding: 14px 16px 10px; }
-  .pool-search-pill { flex: 1; display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #e0ddd5; border-radius: 999px; padding: 8px 14px; transition: border-color 0.15s; }
-  .pool-search-pill:focus-within { border-color: #5b3fa0; }
-  .pool-search-pill .pool-search-icon { font-size: 13px; color: #aaa; }
-  .pool-search-pill .pool-search-input { border: none; outline: none; flex: 1; background: transparent; font-family: inherit; font-size: 13px; color: #1a1a1a; }
   .pool-add-toggle { display: inline-flex; align-items: center; gap: 6px; border: none; background: #f4a93a; color: #2c2456; font-family: inherit; font-weight: 700; font-size: 13px; padding: 9px 16px; border-radius: 999px; cursor: pointer; white-space: nowrap; transition: transform 0.12s, filter 0.12s; flex-shrink: 0; }
   .pool-add-toggle:hover { filter: brightness(1.07); transform: translateY(-1px); }
 
@@ -293,28 +276,7 @@
   .pool-title { font-size: 17px; font-weight: 800; color: #2a1040; }
   .pool-close { background: #f0ede8; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; color: #666; display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0; }
   .pool-close:hover { background: #e4e0d8; }
-  .pool-footer { padding: 12px 16px; border-top: 1px solid #f0ede8; display: flex; justify-content: flex-end; }
-  .btn-clear-pool { background: none; border: 1px solid #e8a8a0; border-radius: 7px; color: #c0392b; font-size: 12px; font-weight: 600; padding: 6px 12px; cursor: pointer; transition: background 0.15s; }
-  .btn-clear-pool:hover { background: #fdf0ef; }
-
-  /* ── Pool filter chips ── */
-  .pool-chips { display: flex; gap: 6px; padding: 0 16px 10px; flex-wrap: wrap; }
-  .pool-chip { padding: 5px 12px; border: 1px solid #e0ddd5; border-radius: 999px; background: #fff; font-size: 12px; font-weight: 600; cursor: pointer; color: #666; display: flex; align-items: center; gap: 5px; transition: border-color 0.15s, color 0.15s; }
-  .pool-chip:hover { border-color: #5b3fa0; color: #5b3fa0; }
-  .pool-chip.active { background: #2c2456; border-color: #2c2456; color: #fff; }
-  .pool-chip-ct { font-size: 11px; font-weight: 700; opacity: 0.7; }
-  .pool-chip.active .pool-chip-ct { opacity: 0.75; }
-
-  /* ── Pool book rows (design-spec bookrow) ── */
-  .pool-list { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 7px; }
-  .pool-row {
-    display: grid; grid-template-columns: 44px 1fr auto;
-    gap: 12px; align-items: center;
-    padding: 10px 12px;
-    background: #fff; border: 1px solid #ebe9e4; border-radius: 12px;
-    cursor: pointer; transition: border-color 0.15s, transform 0.1s;
-  }
-  .pool-row:hover { border-color: #f4a93a; transform: translateY(-1px); }
+  /* ── Pool book rendering (used by stats drill-down) ── */
   .pool-cover { width: 44px; height: 62px; border-radius: 4px; flex-shrink: 0; background: linear-gradient(170deg, #4a3a9a, #8164d8); display: flex; align-items: center; justify-content: center; font-size: 18px; overflow: hidden; color: rgba(255,255,255,0.7); }
   .pool-cover img { width: 44px; height: 62px; object-fit: cover; display: block; }
   .pool-cover.status-read     { background: linear-gradient(170deg, #3a6b10, #82b840); }
@@ -325,17 +287,6 @@
   .pool-book-meta   { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; font-size: 11px; color: #888; }
   .pool-meta-sq     { font-weight: 600; color: #2c2456; }
   .pool-meta-sq::before { content: "▦ "; color: #f4a93a; }
-  .pool-meta-qual   { color: #5b3fa0; font-weight: 600; }
-  .pool-meta-qual::before { content: "✦ "; }
-  /* Status badge */
-  .statebadge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
-  .statebadge .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-  .statebadge.s-unassigned { background: #efe9e1; color: #5b5570; }
-  .statebadge.s-unassigned .dot { background: #aaa; }
-  .statebadge.s-assigned   { background: #e6e1f5; color: #3d3375; }
-  .statebadge.s-assigned .dot   { background: #6a5fbf; }
-  .statebadge.s-read       { background: #f6e8c8; color: #6b4a08; }
-  .statebadge.s-read .dot       { background: #b07a1a; }
   /* Pool empty state */
   .pool-empty-state { padding: 40px 20px; text-align: center; color: #aaa; font-size: 14px; }
   /* Pool stats/groups */
@@ -1191,7 +1142,7 @@ let bookDetailGen = 0;
 // Pool tab feature removed — see pool-feature-backup.md to restore.
 
 // ── Add-book sheet ────────────────────────────────────────────────────────────
-function openAddSheet(sqIdx = null) {
+function openAddSheet(sqIdx) {
   buildAddSheet(sqIdx);
   document.getElementById('add-scrim').classList.add('open');
   document.getElementById('add-sheet').classList.add('open');
@@ -1202,32 +1153,24 @@ function closeAddSheet() {
 }
 document.getElementById('add-scrim').addEventListener('click', closeAddSheet);
 
-function buildAddSheet(sqIdx = null) {
+function buildAddSheet(sqIdx) {
   const head = document.getElementById('add-sheet-head');
   const body = document.getElementById('add-sheet-body');
   const foot = document.getElementById('add-sheet-foot');
   head.innerHTML = ''; body.innerHTML = ''; foot.innerHTML = '';
 
-  // ── Head
+  // ── Head: square name + hard mode rule
   const closeBtn = el('button'); closeBtn.className = 'sheet-close'; closeBtn.innerHTML = '✕'; closeBtn.setAttribute('aria-label','Close'); closeBtn.onclick = closeAddSheet;
   head.appendChild(closeBtn);
-  if (sqIdx !== null) {
-    // Square context: square name is the headline, HM below
-    const mono = el('div'); mono.className = 'sheet-mono'; mono.textContent = 'Add a book';
-    const title = el('h2'); title.textContent = SQUARES[sqIdx].name;
-    head.appendChild(mono); head.appendChild(title);
-    const sq = SQUARES[sqIdx];
-    const hmBox = el('div', sq.hm.startsWith('No hard mode') ? 'sheet-hm-box sheet-hm-none' : 'sheet-hm-box');
-    hmBox.innerHTML = sq.hm.startsWith('No hard mode')
-      ? `<em>${esc(sq.hm)}</em>`
-      : `<strong>Hard mode:</strong> ${esc(sq.hm)}`;
-    head.appendChild(hmBox);
-  } else {
-    // Pool context: generic
-    const mono = el('div'); mono.className = 'sheet-mono'; mono.textContent = 'Pool';
-    const title = el('h2'); title.textContent = 'Add a book';
-    head.appendChild(mono); head.appendChild(title);
-  }
+  const mono = el('div'); mono.className = 'sheet-mono'; mono.textContent = 'Add a book';
+  const title = el('h2'); title.textContent = SQUARES[sqIdx].name;
+  head.appendChild(mono); head.appendChild(title);
+  const sq = SQUARES[sqIdx];
+  const hmBox = el('div', sq.hm.startsWith('No hard mode') ? 'sheet-hm-box sheet-hm-none' : 'sheet-hm-box');
+  hmBox.innerHTML = sq.hm.startsWith('No hard mode')
+    ? `<em>${esc(sq.hm)}</em>`
+    : `<strong>Hard mode:</strong> ${esc(sq.hm)}`;
+  head.appendChild(hmBox);
 
   // ── Body: search
   const pSearchRow = el('div', 'search-row');
@@ -1263,44 +1206,10 @@ function buildAddSheet(sqIdx = null) {
     else { pCuThumb.src = ''; pCuThumb.classList.remove('show'); }
   });
 
-  // ── Qualifies mini grid (pool tab only — not shown when adding from a card square)
-  let pQualGrid = null;
-  if (sqIdx === null) {
-    const pQualHdr = el('div', 'bd-sec-label');
-    const pQualLblSpan = el('span');
-    pQualLblSpan.textContent = 'Qualifies for (0 squares)';
-    pQualHdr.appendChild(pQualLblSpan);
-    body.appendChild(pQualHdr);
-
-    const pQualHint = el('div', 'bd-mini-hint');
-    pQualHint.textContent = 'Tap squares this book could count for.';
-    body.appendChild(pQualHint);
-
-    pQualGrid = el('div', 'sq-tag-list');
-    SQUARES.forEach((s, i) => {
-      const row = el('div', 'sq-tag-row');
-      row.dataset.pqi = i;
-      const check = el('div', 'sq-tag-check');
-      check.innerHTML = '<svg class="sq-tag-check-icon" width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-      const name = el('span', 'sq-tag-row-name');
-      name.textContent = s.name;
-      row.appendChild(check);
-      row.appendChild(name);
-      row.onclick = () => {
-        row.classList.toggle('on');
-        const n = pQualGrid.querySelectorAll('.on').length;
-        pQualLblSpan.textContent = `Qualifies for (${n} square${n === 1 ? '' : 's'})`;
-        addBtn.disabled = !pPending?.title;
-      };
-      pQualGrid.appendChild(row);
-    });
-    body.appendChild(pQualGrid);
-  }
-
   // ── Foot: Cancel + Add buttons
   const cancelBtn = el('button', 'btn-sheet-cancel'); cancelBtn.textContent = 'Cancel';
   cancelBtn.onclick = closeAddSheet;
-  const addBtn = el('button', 'btn-sheet-add'); addBtn.textContent = sqIdx !== null ? 'Add book' : 'Add to pool';
+  const addBtn = el('button', 'btn-sheet-add'); addBtn.textContent = 'Add book';
   addBtn.disabled = true;
   foot.appendChild(cancelBtn); foot.appendChild(addBtn);
 
@@ -1408,9 +1317,7 @@ function buildAddSheet(sqIdx = null) {
 
   addBtn.onclick = () => {
     if (!pPending?.title) return;
-    const qualifies = pQualGrid
-      ? [...pQualGrid.querySelectorAll('[data-pqi].on')].map(c => parseInt(c.dataset.pqi))
-      : (sqIdx !== null ? [sqIdx] : []);
+    const qualifies = [sqIdx];
     // Upsert: if book already in pool, merge qualifies; otherwise add new
     let entry = pool.find(b => b.title.toLowerCase() === pPending.title.toLowerCase());
     if (entry) {
@@ -1422,25 +1329,21 @@ function buildAddSheet(sqIdx = null) {
       pool.push(entry);
     }
     savePool(); updateStats();
-    if (sqIdx !== null) {
-      // Auto-assign if the square was empty
-      if (!asgn[sqIdx]) {
-        // If the book is already assigned to a different square, move it (don't duplicate)
-        const existingAt = assignedSquareOf(entry.id);
-        if (existingAt >= 0 && existingAt !== sqIdx) {
-          const prev = asgn[existingAt];
-          delete asgn[existingAt];
-          asgn[sqIdx] = { bookId: entry.id, status: prev.status, hm: prev.hm || false, rating: prev.rating || 0 };
-        } else {
-          asgn[sqIdx] = { bookId: entry.id, status: 'assigned', hm: false, rating: 0 };
-        }
-        saveAsgn();
+    // Auto-assign if the square was empty
+    if (!asgn[sqIdx]) {
+      // If the book is already assigned to a different square, move it (don't duplicate)
+      const existingAt = assignedSquareOf(entry.id);
+      if (existingAt >= 0 && existingAt !== sqIdx) {
+        const prev = asgn[existingAt];
+        delete asgn[existingAt];
+        asgn[sqIdx] = { bookId: entry.id, status: prev.status, hm: prev.hm || false, rating: prev.rating || 0 };
+      } else {
+        asgn[sqIdx] = { bookId: entry.id, status: 'assigned', hm: false, rating: 0 };
       }
-      renderGrid();
-      closeAddSheet();
-    } else {
-      closeAddSheet();
+      saveAsgn();
     }
+    renderGrid();
+    closeAddSheet();
     showToast(`✓ "${entry.title}" added`);
   };
 
