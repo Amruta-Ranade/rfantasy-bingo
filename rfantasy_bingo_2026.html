@@ -314,6 +314,7 @@
     <div class="grid" id="grid"></div>
   </div>
   <div class="export-row">
+    <button class="btn-io" id="btn-share-card" title="Download your bingo card as an image">📸 Share card</button>
     <button class="btn-io" id="btn-export-json" title="Download a backup of all your data">💾 Backup</button>
     <button class="btn-io" id="btn-import-json" title="Restore from a backup file">📂 Restore</button>
     <button class="btn-io btn-io-danger" id="btn-clear-board" title="Clear all square assignments">🗑 Clear board</button>
@@ -1073,6 +1074,217 @@ async function searchBooks(q) {
   return (olResult.value === null && gbResult.value === null) ? null : [];
 }
 
+// ── Share card (canvas → PNG) ─────────────────────────────────────────────────
+function loadImg(url) {
+  return new Promise(resolve => {
+    if (!url) { resolve(null); return; }
+    const img = new Image();
+    img.crossOrigin = 'anonymous'; // required so Worker-served covers don't taint the canvas
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 3) {
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  for (const w of words) {
+    const test = line ? `${line} ${w}` : w;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = w;
+      if (lines.length === maxLines - 1) break;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  lines.forEach((l, i) => ctx.fillText(l, x, y + i * lineHeight));
+}
+
+async function downloadCard() {
+  const btn = document.getElementById('btn-share-card');
+  const originalText = btn.textContent;
+  btn.textContent = '⏳ Rendering…';
+  btn.disabled = true;
+
+  try {
+    const W = 1080, H = 1280;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    // Background gradient (mirrors body)
+    const bg = ctx.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0,   '#7b4fc9');
+    bg.addColorStop(0.5, '#5b8dd9');
+    bg.addColorStop(1,   '#4ecfcf');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // Header
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.font = 'italic 900 56px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.shadowColor = '#4a2080';
+    ctx.shadowOffsetX = 3; ctx.shadowOffsetY = 3; ctx.shadowBlur = 0;
+    ctx.fillText('r/Fantasy 2026 Bingo', W / 2, 80);
+    ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
+
+    // Stats line
+    const vals = Object.values(asgn);
+    const planned = vals.filter(a => a.status === 'assigned').length;
+    const read = vals.filter(a => a.status === 'read').length;
+    const hm = vals.filter(a => a.status === 'read' && a.hm).length;
+    const bingos = countBingos();
+    ctx.font = '22px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.88)';
+    ctx.fillText(`${planned} Planned · ${read} Read · ${hm} Hard Mode · ${bingos} Bingo${bingos === 1 ? '' : 's'}`, W / 2, 120);
+
+    // Grid container
+    const gridPad = 14;
+    const gridW = 1000;
+    const gridX = (W - gridW) / 2;
+    const gridY = 160;
+    ctx.fillStyle = '#5b3fa0';
+    ctx.beginPath();
+    ctx.roundRect(gridX, gridY, gridW, gridW, 20);
+    ctx.fill();
+
+    const innerW = gridW - gridPad * 2;
+    const gap = 8;
+    const cell = (innerW - gap * 4) / 5;
+
+    // Pre-load all covers in parallel
+    const bookById = {};
+    pool.forEach(b => { bookById[b.id] = b; });
+    const covers = await Promise.all(SQUARES.map((_, i) => {
+      const a = asgn[i];
+      const book = a ? bookById[a.bookId] : null;
+      return loadImg(book?.coverUrl ? proxyCover(book.coverUrl) : null);
+    }));
+
+    // Draw each cell
+    SQUARES.forEach((sq, i) => {
+      const r = Math.floor(i / 5);
+      const c = i % 5;
+      const x = gridX + gridPad + c * (cell + gap);
+      const y = gridY + gridPad + r * (cell + gap);
+      const a = asgn[i];
+      const status = a ? a.status : 'empty';
+      const isGold = i % 2 === 0;
+
+      // Cell background — matches CSS color rules
+      let fill;
+      if (status === 'read')     fill = isGold ? '#82b840' : '#97c459';
+      else if (status === 'assigned') fill = isGold ? '#2abcf5' : '#5dd0f8';
+      else                       fill = isGold ? '#f5b731' : '#d4c98a';
+      ctx.fillStyle = fill;
+      ctx.beginPath();
+      ctx.roundRect(x, y, cell, cell, 10);
+      ctx.fill();
+
+      // Cover area (top 65%)
+      const coverH = cell * 0.65;
+      const img = covers[i];
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(x, y, cell, coverH, [10, 10, 0, 0]);
+      ctx.clip();
+      if (img) {
+        // object-fit: cover behavior
+        const iar = img.width / img.height;
+        const tar = cell / coverH;
+        let sx, sy, sw, sh;
+        if (iar > tar) {
+          sh = img.height; sw = sh * tar;
+          sx = (img.width - sw) / 2; sy = 0;
+        } else {
+          sw = img.width; sh = sw / tar;
+          sx = 0; sy = (img.height - sh) / 2;
+        }
+        ctx.drawImage(img, sx, sy, sw, sh, x, y, cell, coverH);
+      } else {
+        // Placeholder emoji
+        ctx.fillStyle = 'rgba(0,0,0,0.18)';
+        ctx.textAlign = 'center';
+        ctx.font = `${cell * 0.28}px -apple-system, "Segoe UI Emoji", sans-serif`;
+        ctx.fillText('📚', x + cell / 2, y + coverH / 2 + cell * 0.1);
+      }
+      ctx.restore();
+
+      // HM ribbon (top-right corner)
+      if (a?.hm && status === 'read') {
+        ctx.save();
+        ctx.translate(x + cell - 18, y + 18);
+        ctx.rotate(Math.PI / 4);
+        ctx.fillStyle = '#f5b731';
+        ctx.fillRect(-32, -9, 64, 18);
+        ctx.fillStyle = '#2a1040';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('HM', 0, 0);
+        ctx.textBaseline = 'alphabetic';
+        ctx.restore();
+      }
+
+      // Body (bottom 35%) — square name + stars
+      const bodyY = y + coverH;
+      const bodyH = cell - coverH;
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      ctx.beginPath();
+      ctx.roundRect(x, bodyY, cell, bodyH, [0, 0, 10, 10]);
+      ctx.fill();
+
+      // Square name (wrapped)
+      ctx.fillStyle = '#2a1040';
+      ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.textAlign = 'center';
+      wrapText(ctx, sq.name, x + cell / 2, bodyY + 18, cell - 12, 15, status === 'read' && a.rating ? 2 : 3);
+
+      // Stars (if read with rating)
+      if (status === 'read' && a.rating) {
+        const sSize = 14;
+        const totalW = sSize * 5;
+        const sx = x + (cell - totalW) / 2;
+        const sy = bodyY + bodyH - 8;
+        ctx.font = `${sSize}px sans-serif`;
+        ctx.textAlign = 'left';
+        for (let s = 0; s < 5; s++) {
+          ctx.fillStyle = s < a.rating ? '#f59e0b' : 'rgba(0,0,0,0.25)';
+          ctx.fillText('★', sx + s * sSize, sy);
+        }
+      }
+    });
+
+    // Footer attribution
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`amruta-ranade.github.io/rfantasy-bingo · ${new Date().toISOString().slice(0,10)}`, W / 2, H - 30);
+
+    // Save
+    canvas.toBlob(blob => {
+      if (!blob) { showToast('Couldn\'t generate image — try again', '#b03a2e'); return; }
+      const link = document.createElement('a');
+      link.download = `rfantasy_bingo_2026_${new Date().toISOString().slice(0,10)}.png`;
+      link.href = URL.createObjectURL(blob);
+      link.click();
+      URL.revokeObjectURL(link.href);
+      showToast('✓ Card downloaded');
+    }, 'image/png');
+  } catch (e) {
+    showToast('Couldn\'t generate image — try again', '#b03a2e');
+    console.error(e);
+  } finally {
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
+}
+
 // ── JSON backup / restore ─────────────────────────────────────────────────────
 function exportData() {
   const json = JSON.stringify({ version: SCHEMA_VERSION, pool, asgn }, null, 2);
@@ -1124,6 +1336,7 @@ function importData() {
   input.click();
 }
 
+document.getElementById('btn-share-card').onclick = downloadCard;
 document.getElementById('btn-export-json').onclick = exportData;
 document.getElementById('btn-import-json').onclick = importData;
 document.getElementById('btn-clear-board').onclick = () => {
