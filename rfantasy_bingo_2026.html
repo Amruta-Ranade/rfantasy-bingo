@@ -1111,7 +1111,7 @@ async function downloadCard() {
   btn.disabled = true;
 
   try {
-    const W = 1080, H = 1500;
+    const W = 1080, H = 2000;
     const canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
@@ -1143,7 +1143,8 @@ async function downloadCard() {
     ctx.fillStyle = 'rgba(255,255,255,0.88)';
     ctx.fillText(`${planned} Planned · ${read} Read · ${hm} Hard Mode · ${bingos} Bingo${bingos === 1 ? '' : 's'}`, W / 2, 120);
 
-    // Grid container — cells are portrait (1:1.25) to better fit book covers
+    // Grid container — cover area is 2:3 (matches book aspect ratio) so
+    // covers fit without cropping. Body underneath holds the square name.
     const gridPad = 14;
     const gridW = 1000;
     const gridX = (W - gridW) / 2;
@@ -1151,7 +1152,9 @@ async function downloadCard() {
     const gap = 8;
     const innerW = gridW - gridPad * 2;
     const cellW = (innerW - gap * 4) / 5;
-    const cellH = cellW * 1.25;
+    const bodyH = 64; // fixed body height — enough for 2 lines + stars
+    const coverH = cellW * 1.5; // 2:3 cover area
+    const cellH = coverH + bodyH;
     const gridH = gridPad * 2 + cellH * 5 + gap * 4;
     ctx.fillStyle = '#5b3fa0';
     ctx.beginPath();
@@ -1188,28 +1191,29 @@ async function downloadCard() {
       ctx.roundRect(x, y, cellW, cellH, 10);
       ctx.fill();
 
-      // Cover area (top ~72% — leaves ~66px body to match web layout)
-      const coverH = cellH * 0.72;
+      // Cover area — 2:3 to match book aspect, so most covers fit without
+      // cropping. object-fit: contain so any odd aspect ratio just letterboxes
+      // against the cell background (never crops).
       const img = covers[i];
       ctx.save();
       ctx.beginPath();
       ctx.roundRect(x, y, cell, coverH, [10, 10, 0, 0]);
       ctx.clip();
       if (img) {
-        // object-fit: cover behavior
         const iar = img.width / img.height;
         const tar = cell / coverH;
-        let sx, sy, sw, sh;
+        let dw, dh, dx, dy;
         if (iar > tar) {
-          sh = img.height; sw = sh * tar;
-          sx = (img.width - sw) / 2; sy = 0;
+          // wider than target — fit width, letterbox top/bottom
+          dw = cell; dh = cell / iar;
+          dx = x; dy = y + (coverH - dh) / 2;
         } else {
-          sw = img.width; sh = sw / tar;
-          sx = 0; sy = (img.height - sh) / 2;
+          // taller than target — fit height, letterbox sides
+          dh = coverH; dw = coverH * iar;
+          dx = x + (cell - dw) / 2; dy = y;
         }
-        ctx.drawImage(img, sx, sy, sw, sh, x, y, cell, coverH);
+        ctx.drawImage(img, dx, dy, dw, dh);
       } else {
-        // Placeholder emoji
         ctx.fillStyle = 'rgba(0,0,0,0.18)';
         ctx.textAlign = 'center';
         ctx.font = `${cell * 0.28}px -apple-system, "Segoe UI Emoji", sans-serif`;
@@ -1233,9 +1237,8 @@ async function downloadCard() {
         ctx.restore();
       }
 
-      // Body (bottom ~28%) — square name + stars
+      // Body — square name + stars
       const bodyY = y + coverH;
-      const bodyH = cellH - coverH;
       ctx.fillStyle = 'rgba(0,0,0,0.12)';
       ctx.beginPath();
       ctx.roundRect(x, bodyY, cell, bodyH, [0, 0, 10, 10]);
