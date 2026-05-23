@@ -434,10 +434,30 @@ const MIGRATIONS = [
   ({ pool, asgn }) => ({ pool, asgn }),
 ];
 
+const CORRUPTED_BACKUP_KEY = 'rfb26_corrupted_backup';
+let dataCorruptionDetected = false;
+
 function loadData() {
   let pool = [], asgn = {};
-  try { pool = JSON.parse(localStorage.getItem(POOL_KEY) || '[]'); } catch {}
-  try { asgn = JSON.parse(localStorage.getItem(ASGN_KEY) || '{}'); } catch {}
+  const rawPool = localStorage.getItem(POOL_KEY);
+  const rawAsgn = localStorage.getItem(ASGN_KEY);
+  let poolErr = null, asgnErr = null;
+  try { pool = JSON.parse(rawPool || '[]'); } catch (e) { poolErr = rawPool; }
+  try { asgn = JSON.parse(rawAsgn || '{}'); } catch (e) { asgnErr = rawAsgn; }
+
+  // Preserve corrupted data in a separate key so the user can recover it
+  // manually instead of silently losing everything.
+  if (poolErr !== null || asgnErr !== null) {
+    try {
+      localStorage.setItem(CORRUPTED_BACKUP_KEY, JSON.stringify({
+        when: new Date().toISOString(),
+        pool: poolErr,
+        asgn: asgnErr,
+      }));
+    } catch {}
+    dataCorruptionDetected = true;
+  }
+
   let storedVersion = 0;
   try { storedVersion = parseInt(localStorage.getItem(VERSION_KEY) || '0'); } catch {}
   // Run any migrations newer than the stored version
@@ -450,6 +470,33 @@ function loadData() {
     localStorage.setItem(VERSION_KEY, String(SCHEMA_VERSION));
   }
   return { pool, asgn };
+}
+
+function showCorruptionBanner() {
+  const banner = el('div');
+  banner.style.cssText = 'background:#fef2c8;border:1px solid #f0c878;border-radius:10px;padding:12px 14px;margin:0 0 1rem;font-size:13px;color:#5a4a10;';
+  banner.innerHTML = '⚠️ <strong>Some saved data couldn\'t be read.</strong> A copy was preserved — download it for manual recovery, then dismiss to clear this warning.';
+  const actions = el('div'); actions.style.cssText = 'margin-top:8px;display:flex;gap:8px;';
+  const dl = el('button', 'btn-io'); dl.textContent = 'Download corrupted data';
+  dl.onclick = () => {
+    const raw = localStorage.getItem(CORRUPTED_BACKUP_KEY) || '{}';
+    const blob = new Blob([raw], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.download = `rfantasy_bingo_2026_corrupted_${new Date().toISOString().slice(0,10)}.json`;
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+  const dismiss = el('button', 'btn-io'); dismiss.textContent = 'Dismiss';
+  dismiss.onclick = () => {
+    banner.remove();
+    try { localStorage.removeItem(CORRUPTED_BACKUP_KEY); } catch {}
+  };
+  actions.appendChild(dl); actions.appendChild(dismiss);
+  banner.appendChild(actions);
+  const container = document.querySelector('.container');
+  const stats = document.querySelector('.stats');
+  container.insertBefore(banner, stats);
 }
 
 let { pool, asgn } = loadData();
@@ -1137,6 +1184,9 @@ document.getElementById('btn-clear-board').onclick = () => {
 let poolDetailId = null;
 let poolDetailAccordionOpen = null; // null = uninitialized; Set of open labels on rebuild
 let poolDetailOpenCoverEdit = false; // one-shot: auto-expand cover editor on next open
+// Generation counter — async work captures it and bails if it changes (modal
+// closed or reopened). Prevents DOM updates after the modal is gone.
+let bookDetailGen = 0;
 
 // Pool tab feature removed — see pool-feature-backup.md to restore.
 
@@ -1400,6 +1450,7 @@ function buildAddSheet(sqIdx = null) {
 
 // ── Book detail overlay ───────────────────────────────────────────────────────
 function openBookDetail(bookId, openAccordion, openCoverEdit = false) {
+  bookDetailGen++;
   poolDetailId = bookId;
   poolDetailAccordionOpen = openAccordion ? new Set([openAccordion]) : null;
   poolDetailOpenCoverEdit = openCoverEdit;
@@ -1407,6 +1458,7 @@ function openBookDetail(bookId, openAccordion, openCoverEdit = false) {
   document.getElementById('book-overlay').classList.add('open');
 }
 function closeBookDetail() {
+  bookDetailGen++; // invalidate any in-flight cover-picker fetches
   document.getElementById('book-overlay').classList.remove('open');
   poolDetailId = null;
   poolDetailAccordionOpen = null;
@@ -1510,11 +1562,13 @@ function buildBookDetail() {
   modal.appendChild(coverEditSection);
 
   // Async: load cover options from OL + GB
+  const myGen = bookDetailGen;
   (async () => {
     try {
       const q = b.author ? `${b.title} ${b.author}` : b.title;
       const norm = s => s.toLowerCase().trim();
       const results = await searchBooks(q);
+      if (myGen !== bookDetailGen) return; // modal closed/reopened — bail
       if (results === null) {
         pickerStatus.textContent = 'Search unavailable — check connection.';
         return;
@@ -1526,6 +1580,7 @@ function buildBookDetail() {
       if (match?.olWorkKey) {
         const data = await fetch(`https://openlibrary.org${match.olWorkKey}/editions.json?limit=20`)
           .then(r => r.ok ? r.json() : null).catch(() => null);
+        if (myGen !== bookDetailGen) return;
         if (data?.entries?.length) {
           const ids = data.entries.flatMap(e => e.covers || []).filter(id => id > 0);
           urls.push(...[...new Set(ids)].map(id => `https://covers.openlibrary.org/b/id/${id}-L.jpg`));
@@ -1534,6 +1589,7 @@ function buildBookDetail() {
 
       // Targeted GB search for more editions
       const gbData = await fetch(gbUrl(q, 5)).then(r => r.ok ? r.json() : null).catch(() => null);
+      if (myGen !== bookDetailGen) return;
       if (gbData?.items?.length) {
         gbData.items.forEach(item => {
           const info = item.volumeInfo || {};
@@ -1801,6 +1857,7 @@ document.getElementById('stat-bingo').onclick   = () => openStats('bingo');
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 renderGrid();
+if (dataCorruptionDetected) showCorruptionBanner();
 </script>
 </body>
 </html>
