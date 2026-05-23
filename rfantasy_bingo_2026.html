@@ -422,12 +422,37 @@ const SQUARES = [
 // ── Data ──────────────────────────────────────────────────────────────────────
 // pool: [{id, title, author, coverUrl, qualifies:[squareIdx,...]}]
 // asgn: {squareIdx: {bookId, status:'assigned'|'read', hm:bool, rating:int}}
-const POOL_KEY = 'rfb26_pool';
-const ASGN_KEY = 'rfb26_asgn';
-let pool = [];
-let asgn = {};
-try { pool = JSON.parse(localStorage.getItem(POOL_KEY) || '[]'); } catch {}
-try { asgn = JSON.parse(localStorage.getItem(ASGN_KEY) || '{}'); } catch {}
+const POOL_KEY    = 'rfb26_pool';
+const ASGN_KEY    = 'rfb26_asgn';
+const VERSION_KEY = 'rfb26_version';
+const SCHEMA_VERSION = 1;
+
+// Migrations: each entry runs when stored version < its index.
+// To add a new migration, bump SCHEMA_VERSION and add a function here.
+const MIGRATIONS = [
+  // v0 → v1: baseline. No-op (current shape).
+  ({ pool, asgn }) => ({ pool, asgn }),
+];
+
+function loadData() {
+  let pool = [], asgn = {};
+  try { pool = JSON.parse(localStorage.getItem(POOL_KEY) || '[]'); } catch {}
+  try { asgn = JSON.parse(localStorage.getItem(ASGN_KEY) || '{}'); } catch {}
+  let storedVersion = 0;
+  try { storedVersion = parseInt(localStorage.getItem(VERSION_KEY) || '0'); } catch {}
+  // Run any migrations newer than the stored version
+  for (let v = storedVersion; v < SCHEMA_VERSION; v++) {
+    if (MIGRATIONS[v]) ({ pool, asgn } = MIGRATIONS[v]({ pool, asgn }));
+  }
+  if (storedVersion < SCHEMA_VERSION) {
+    localStorage.setItem(POOL_KEY, JSON.stringify(pool));
+    localStorage.setItem(ASGN_KEY, JSON.stringify(asgn));
+    localStorage.setItem(VERSION_KEY, String(SCHEMA_VERSION));
+  }
+  return { pool, asgn };
+}
+
+let { pool, asgn } = loadData();
 
 function savePool() { localStorage.setItem(POOL_KEY, JSON.stringify(pool)); }
 function saveAsgn() { localStorage.setItem(ASGN_KEY, JSON.stringify(asgn)); }
@@ -773,7 +798,10 @@ function buildModal() {
       item.appendChild(cv);
 
       const ci = el('div','cand-info');
-      const ct = el('div','cand-title'); ct.textContent = b.title; ci.appendChild(ct);
+      const ct = el('div','cand-title'); ct.textContent = b.title;
+      ct.style.cursor = 'pointer'; ct.title = 'View book details';
+      ct.onclick = (e) => { e.stopPropagation(); closeModal(); openBookDetail(b.id); };
+      ci.appendChild(ct);
       if (b.author) { const ca = el('div','cand-author'); ca.textContent = b.author; ci.appendChild(ca); }
 
       const candAuthorAt = authorConflictAt(b.author, b.id, idx);
@@ -986,7 +1014,7 @@ async function searchBooks(q) {
 
 // ── JSON backup / restore ─────────────────────────────────────────────────────
 function exportData() {
-  const json = JSON.stringify({ pool, asgn }, null, 2);
+  const json = JSON.stringify({ version: SCHEMA_VERSION, pool, asgn }, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
   const link = document.createElement('a');
   link.download = `rfantasy_bingo_2026_backup_${new Date().toISOString().slice(0,10)}.json`;
@@ -1016,8 +1044,16 @@ function importData() {
         });
         if (!validPool || !validAsgn) throw new Error();
         if (!confirm('Replace all your current data with this backup?')) return;
-        pool = data.pool; asgn = data.asgn;
-        savePool(); saveAsgn(); renderGrid(); buildInlinePool(); updateStats();
+        // Run migrations on imported data if it's older than current schema
+        let imported = { pool: data.pool, asgn: data.asgn };
+        const importedVersion = Number.isInteger(data.version) ? data.version : 0;
+        for (let v = importedVersion; v < SCHEMA_VERSION; v++) {
+          if (MIGRATIONS[v]) imported = MIGRATIONS[v](imported);
+        }
+        pool = imported.pool; asgn = imported.asgn;
+        savePool(); saveAsgn();
+        localStorage.setItem(VERSION_KEY, String(SCHEMA_VERSION));
+        renderGrid(); buildInlinePool(); updateStats();
       } catch {
         alert('Could not read file — make sure it\'s a valid bingo backup.');
       }
@@ -1279,7 +1315,15 @@ function buildAddSheet(sqIdx = null) {
     if (sqIdx !== null) {
       // Auto-assign if the square was empty
       if (!asgn[sqIdx]) {
-        asgn[sqIdx] = { bookId: entry.id, status: 'assigned', hm: false, rating: 0 };
+        // If the book is already assigned to a different square, move it (don't duplicate)
+        const existingAt = assignedSquareOf(entry.id);
+        if (existingAt >= 0 && existingAt !== sqIdx) {
+          const prev = asgn[existingAt];
+          delete asgn[existingAt];
+          asgn[sqIdx] = { bookId: entry.id, status: prev.status, hm: prev.hm || false, rating: prev.rating || 0 };
+        } else {
+          asgn[sqIdx] = { bookId: entry.id, status: 'assigned', hm: false, rating: 0 };
+        }
         saveAsgn();
       }
       renderGrid();
