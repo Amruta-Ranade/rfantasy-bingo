@@ -474,6 +474,23 @@ function proxyCover(u) {
   } catch {}
   return fixed;
 }
+// Render a cover image into `container` with fallback handling.
+// opts.alt: alt text. opts.placeholder: 'emoji' (default) sets container.textContent = '📚';
+// 'div' appends a coverPh() element (used for grid squares).
+function renderCoverInto(container, url, opts = {}) {
+  const ph = opts.placeholder || 'emoji';
+  const fallback = () => {
+    if (ph === 'div') container.appendChild(coverPh());
+    else container.textContent = '📚';
+  };
+  if (!url) { fallback(); return null; }
+  const img = el('img');
+  img.src = proxyCover(url);
+  img.alt = opts.alt || '';
+  img.onerror = () => { img.remove(); fallback(); };
+  container.appendChild(img);
+  return img;
+}
 function candidatesFor(idx) { return pool.filter(b => (b.qualifies||[]).includes(idx)); }
 function assignedSquareOf(bookId) {
   const k = Object.keys(asgn).find(k => asgn[k].bookId === bookId);
@@ -541,16 +558,10 @@ function renderGrid() {
     div.onkeydown = e => { if (e.key==='Enter'||e.key===' '){e.preventDefault();openModal(i);} };
 
     const cover = el('div', 'sq-cover');
-    if (book?.coverUrl) {
-      const img = el('img'); img.src = proxyCover(book.coverUrl); img.alt = book.title;
-      img.onerror = () => { img.remove(); cover.appendChild(coverPh()); };
-      cover.appendChild(img);
-    } else {
-      cover.appendChild(coverPh());
-      if (!a) {
-        const hint = el('div', 'sq-cover-hint'); hint.textContent = '+ Add a book';
-        cover.appendChild(hint);
-      }
+    renderCoverInto(cover, book?.coverUrl, { alt: book?.title, placeholder: 'div' });
+    if (!book?.coverUrl && !a) {
+      const hint = el('div', 'sq-cover-hint'); hint.textContent = '+ Add a book';
+      cover.appendChild(hint);
     }
 
     // Options badge on cover
@@ -698,11 +709,7 @@ function buildModal() {
 
     const coverWrap = el('div','modal-book-cover-wrap');
     const coverEl = el('div','modal-book-cover');
-    if (book.coverUrl) {
-      const img = el('img'); img.src = proxyCover(book.coverUrl); img.alt = book.title;
-      img.onerror = () => { coverEl.textContent = '📚'; };
-      coverEl.appendChild(img);
-    } else { coverEl.textContent = '📚'; }
+    renderCoverInto(coverEl, book.coverUrl, { alt: book.title });
     coverWrap.appendChild(coverEl);
     const ecLink = el('button','modal-edit-cover-link'); ecLink.textContent = 'Edit cover';
     ecLink.onclick = () => { closeModal(); openBookDetail(book.id, null, true); };
@@ -790,11 +797,7 @@ function buildModal() {
       const item = el('div', `cand-item${isUsed?' cand-used':''}`);
 
       const cv = el('div','cand-cover');
-      if (b.coverUrl) {
-        const img = el('img'); img.src = proxyCover(b.coverUrl); img.alt = b.title;
-        img.onerror = () => { cv.textContent = '📚'; };
-        cv.appendChild(img);
-      } else { cv.textContent = '📚'; }
+      renderCoverInto(cv, b.coverUrl, { alt: b.title });
       item.appendChild(cv);
 
       const ci = el('div','cand-info');
@@ -1381,11 +1384,7 @@ function buildBookDetail() {
   const hdr = el('div', 'bd-header');
   const coverWrap = el('div', 'modal-book-cover-wrap');
   const coverEl = el('div', 'bd-cover');
-  if (b.coverUrl) {
-    const img = el('img'); img.src = proxyCover(b.coverUrl); img.alt = b.title;
-    img.onerror = () => { img.remove(); coverEl.textContent = '📚'; };
-    coverEl.appendChild(img);
-  } else { coverEl.textContent = '📚'; }
+  renderCoverInto(coverEl, b.coverUrl, { alt: b.title });
   coverWrap.appendChild(coverEl);
   const ecLink = el('button', 'modal-edit-cover-link'); ecLink.textContent = 'Edit cover';
   ecLink.onclick = () => { coverEditSection.style.display = coverEditSection.style.display === 'none' ? 'block' : 'none'; };
@@ -1709,11 +1708,7 @@ function renderStatRow(sqIdx, modal) {
   const row = el('div','pool-book');
   const statusKey = a.status === 'read' ? 'read' : 'assigned';
   const cov = el('div', `pool-cover status-${statusKey}`);
-  if (book.coverUrl) {
-    const img = el('img'); img.src = proxyCover(book.coverUrl); img.alt = book.title;
-    img.onerror = () => { cov.textContent = '📚'; };
-    cov.appendChild(img);
-  } else { cov.textContent = '📚'; }
+  renderCoverInto(cov, book.coverUrl, { alt: book.title });
   row.appendChild(cov);
 
   const info = el('div','pool-info');
