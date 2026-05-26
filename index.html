@@ -1770,6 +1770,14 @@ function buildAddSheet(sqIdx) {
       item.onclick = () => pSelectBook(b);
       pSr.appendChild(item);
     });
+    // Escape hatch: results may be wrong matches — let the user fall through to manual entry
+    const manualFooter = el('div');
+    manualFooter.style.cssText = 'padding:10px 12px;border-top:1px solid #f0ede8;text-align:center;cursor:pointer;font-size:12px;font-weight:600;color:#5b3fa0;background:#faf8ff;';
+    manualFooter.textContent = "None of these? Add manually →";
+    manualFooter.onmouseenter = () => manualFooter.style.background = '#f0ebff';
+    manualFooter.onmouseleave = () => manualFooter.style.background = '#faf8ff';
+    manualFooter.onclick = () => openManualForm(q);
+    pSr.appendChild(manualFooter);
     pSr.classList.add('show');
   }
 
