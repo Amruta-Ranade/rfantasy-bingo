@@ -1586,6 +1586,57 @@ function buildAddSheet(sqIdx) {
     else { pCuThumb.src = ''; pCuThumb.classList.remove('show'); }
   });
 
+  // ── Manual entry form (hidden until triggered by no-results)
+  const manualForm = el('div', '');
+  manualForm.style.cssText = 'display:none;background:#f5f0ff;border-radius:10px;padding:12px 14px;margin-top:6px;';
+  const mHdr = el('div');
+  mHdr.style.cssText = 'font-size:13px;font-weight:700;color:#5b3fa0;margin-bottom:10px;';
+  mHdr.textContent = "No results — add it manually";
+  const mTitleLbl = el('div'); mTitleLbl.textContent = 'Title'; mTitleLbl.style.cssText = 'font-size:11px;color:#888;font-weight:600;margin-bottom:3px;';
+  const mTitleIn = el('input', 'inline-cover-input'); mTitleIn.type = 'text'; mTitleIn.placeholder = 'Book title'; mTitleIn.style.cssText = 'width:100%;padding:8px 10px;font-size:13px;margin-bottom:8px;';
+  const mAuthorLbl = el('div'); mAuthorLbl.textContent = 'Author'; mAuthorLbl.style.cssText = 'font-size:11px;color:#888;font-weight:600;margin-bottom:3px;';
+  const mAuthorIn = el('input', 'inline-cover-input'); mAuthorIn.type = 'text'; mAuthorIn.placeholder = 'Author name'; mAuthorIn.style.cssText = 'width:100%;padding:8px 10px;font-size:13px;margin-bottom:8px;';
+  const mCoverLbl = el('div'); mCoverLbl.textContent = 'Cover URL'; mCoverLbl.style.cssText = 'font-size:11px;color:#888;font-weight:600;margin-bottom:3px;';
+  const mCoverRow = el('div'); mCoverRow.style.cssText = 'display:flex;gap:7px;align-items:center;';
+  const mCoverIn = el('input', 'inline-cover-input'); mCoverIn.type = 'url'; mCoverIn.placeholder = 'Paste image URL'; mCoverIn.style.cssText = 'flex:1;padding:8px 10px;font-size:13px;';
+  const mCoverThumb = el('img', 'inline-cover-thumb'); mCoverThumb.alt = '';
+  mCoverRow.appendChild(mCoverIn); mCoverRow.appendChild(mCoverThumb);
+  manualForm.appendChild(mHdr);
+  manualForm.appendChild(mTitleLbl); manualForm.appendChild(mTitleIn);
+  manualForm.appendChild(mAuthorLbl); manualForm.appendChild(mAuthorIn);
+  manualForm.appendChild(mCoverLbl); manualForm.appendChild(mCoverRow);
+  body.appendChild(manualForm);
+
+  function openManualForm(prefill) {
+    // Hide all search-flow widgets — the manual form is self-contained
+    pSr.classList.remove('show'); pSr.innerHTML = '';
+    pPrev.classList.remove('show'); pPrev.innerHTML = '';
+    pCpRow.classList.remove('show'); pCpStrip.innerHTML = '';
+    pCuRow.style.display = 'none'; pCuIn.value = ''; pCuThumb.src = ''; pCuThumb.classList.remove('show');
+    manualForm.style.display = 'block';
+    mTitleIn.value = prefill || '';
+    mAuthorIn.value = '';
+    mCoverIn.value = ''; mCoverThumb.src = ''; mCoverThumb.classList.remove('show');
+    updateManualPending();
+    setTimeout(() => { mTitleIn.focus(); if (prefill) mTitleIn.select(); }, 50);
+  }
+
+  function updateManualPending() {
+    const title = mTitleIn.value.trim();
+    const author = mAuthorIn.value.trim();
+    const coverUrl = mCoverIn.value.trim() || null;
+    pPending = title ? { title, author, coverUrl, _apiCover: null, covers: [], olWorkKey: null } : null;
+    syncAddBtn();
+  }
+  mTitleIn.addEventListener('input', updateManualPending);
+  mAuthorIn.addEventListener('input', updateManualPending);
+  mCoverIn.addEventListener('input', () => {
+    const url = mCoverIn.value.trim();
+    if (url) { mCoverThumb.src = url; mCoverThumb.classList.add('show'); mCoverThumb.onerror = () => mCoverThumb.classList.remove('show'); }
+    else { mCoverThumb.src = ''; mCoverThumb.classList.remove('show'); }
+    updateManualPending();
+  });
+
   // ── Foot: Cancel + Add buttons
   const cancelBtn = el('button', 'btn-sheet-cancel'); cancelBtn.textContent = 'Cancel';
   cancelBtn.onclick = closeAddSheet;
@@ -1624,11 +1675,17 @@ function buildAddSheet(sqIdx) {
     pPending = { title: b.title, author: b.author, coverUrl: b.cover || null, _apiCover: b.cover || null, covers: b.covers || [], olWorkKey: b.olWorkKey || null };
     pPrev.innerHTML = `<div class="sel-title">${esc(b.title)}</div>${b.author ? `<div class="sel-author">${esc(b.author)}</div>` : ''}`;
     pPrev.classList.add('show');
-    pRenderCovers(b, b.cover || null);
     pSr.classList.remove('show'); pSr.innerHTML = '';
+    syncAddBtn();
+    // Books already in the user's library skip the cover picker — they have a chosen cover
+    if (b._inPool) {
+      pCpRow.classList.remove('show'); pCpStrip.innerHTML = '';
+      pCuRow.style.display = 'none';
+      return;
+    }
+    pRenderCovers(b, b.cover || null);
     // Show the custom URL row; reset it
     pCuRow.style.display = 'flex'; pCuIn.value = ''; pCuThumb.src = ''; pCuThumb.classList.remove('show');
-    syncAddBtn();
     // Fetch more covers async: OL work endpoint + targeted GB search
     const addMoreCovers = (urls) => {
       if (gen !== _coverGen) return; // stale — user selected a different book
@@ -1666,20 +1723,49 @@ function buildAddSheet(sqIdx) {
 
   async function pDoSearch() {
     const q = pSi.value.trim(); if (q.length < 2) return;
+    manualForm.style.display = 'none';
     pSw.classList.add('loading'); pSr.innerHTML = ''; pSr.classList.remove('show');
+
+    // Match against the user's existing pool first so manually-added books are reusable
+    const nq = q.toLowerCase();
+    const poolMatches = pool.filter(b =>
+      b.title.toLowerCase().includes(nq) ||
+      (b.author && b.author.toLowerCase().includes(nq))
+    ).map(b => ({
+      title: b.title, author: b.author || '',
+      thumb: b.coverUrl, cover: b.coverUrl,
+      covers: b.coverUrl ? [b.coverUrl] : [],
+      olWorkKey: null, _inPool: true,
+    }));
+
     const results = await searchBooks(q);
     pSw.classList.remove('loading');
-    if (!results?.length) {
-      pSr.innerHTML = `<div class="no-results">${results === null ? 'Search failed — check connection' : 'No results found'}</div>`;
-      pSr.classList.add('show'); return;
+
+    const poolTitles = new Set(poolMatches.map(b => b.title.toLowerCase()));
+    const apiResults = (results || []).filter(r => !poolTitles.has(r.title.toLowerCase()));
+    const merged = [...poolMatches, ...apiResults];
+
+    if (!merged.length) {
+      if (results === null) {
+        pSr.innerHTML = '<div class="no-results">Search failed — check connection</div>';
+        pSr.classList.add('show'); return;
+      }
+      // No results — open the spacious manual form pre-filled with the search query
+      openManualForm(q);
+      return;
     }
-    results.forEach(b => {
+    merged.forEach(b => {
       const item = el('div', 'result-item');
       if (b.thumb) { const img = el('img', 'result-thumb'); img.src = proxyCover(b.thumb); img.alt = ''; item.appendChild(img); }
       else { item.appendChild(thumbPh()); }
       const info = el('div', 'result-info');
       const t = el('div', 'result-title'); t.textContent = b.title; info.appendChild(t);
       if (b.author) { const a = el('div', 'result-author'); a.textContent = b.author; info.appendChild(a); }
+      if (b._inPool) {
+        const badge = el('div'); badge.textContent = '✓ in your library';
+        badge.style.cssText = 'font-size:10px;font-weight:700;color:#5b3fa0;background:#ede9f8;border-radius:4px;padding:1px 6px;margin-top:3px;display:inline-block;';
+        info.appendChild(badge);
+      }
       item.appendChild(info);
       item.onclick = () => pSelectBook(b);
       pSr.appendChild(item);
