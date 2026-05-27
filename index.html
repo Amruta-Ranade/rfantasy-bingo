@@ -1316,11 +1316,12 @@ async function downloadCard() {
   btn.textContent = '⏳ Rendering…';
   btn.disabled = true;
 
+  let ctx = null;
   try {
     const W = 1080, H = 2000;
     const canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
-    const ctx = canvas.getContext('2d');
+    ctx = canvas.getContext('2d');
 
     // Background gradient (mirrors body)
     const bg = ctx.createLinearGradient(0, 0, W, H);
