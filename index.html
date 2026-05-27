@@ -1573,18 +1573,22 @@ function buildAddSheet(sqIdx) {
   const foot = document.getElementById('add-sheet-foot');
   head.innerHTML = ''; body.innerHTML = ''; foot.innerHTML = '';
 
-  // ── Head: square name + hard mode rule
+  // ── Head: square name + hard mode rule (or generic header if adding to library)
   const closeBtn = el('button'); closeBtn.className = 'sheet-close'; closeBtn.innerHTML = '✕'; closeBtn.setAttribute('aria-label','Close'); closeBtn.onclick = closeAddSheet;
   head.appendChild(closeBtn);
-  const mono = el('div'); mono.className = 'sheet-mono'; mono.textContent = 'Add a book';
-  const title = el('h2'); title.textContent = SQUARES[sqIdx].name;
+  const mono = el('div'); mono.className = 'sheet-mono';
+  mono.textContent = sqIdx === null ? 'New book' : 'Add a book';
+  const title = el('h2');
+  title.textContent = sqIdx === null ? 'Add to library' : SQUARES[sqIdx].name;
   head.appendChild(mono); head.appendChild(title);
-  const sq = SQUARES[sqIdx];
-  const hmBox = el('div', sq.hm.startsWith('No hard mode') ? 'sheet-hm-box sheet-hm-none' : 'sheet-hm-box');
-  hmBox.innerHTML = sq.hm.startsWith('No hard mode')
-    ? `<em>${esc(sq.hm)}</em>`
-    : `<strong>Hard mode:</strong> ${esc(sq.hm)}`;
-  head.appendChild(hmBox);
+  if (sqIdx !== null) {
+    const sq = SQUARES[sqIdx];
+    const hmBox = el('div', sq.hm.startsWith('No hard mode') ? 'sheet-hm-box sheet-hm-none' : 'sheet-hm-box');
+    hmBox.innerHTML = sq.hm.startsWith('No hard mode')
+      ? `<em>${esc(sq.hm)}</em>`
+      : `<strong>Hard mode:</strong> ${esc(sq.hm)}`;
+    head.appendChild(hmBox);
+  }
 
 
   // ── Body: search
@@ -1826,7 +1830,7 @@ function buildAddSheet(sqIdx) {
 
   addBtn.onclick = () => {
     if (!pPending?.title) return;
-    const qualifies = [sqIdx];
+    const qualifies = sqIdx === null ? [] : [sqIdx];
     // Upsert: if book already in pool, merge qualifies; otherwise add new
     let entry = pool.find(b => b.title.toLowerCase() === pPending.title.toLowerCase());
     if (entry) {
@@ -1838,8 +1842,8 @@ function buildAddSheet(sqIdx) {
       pool.push(entry);
     }
     savePool(); updateStats();
-    // Auto-assign if the square was empty
-    if (!asgn[sqIdx]) {
+    // Auto-assign only if we have a target square and it's empty
+    if (sqIdx !== null && !asgn[sqIdx]) {
       // If the book is already assigned to a different square, move it (don't duplicate)
       const existingAt = assignedSquareOf(entry.id);
       if (existingAt >= 0 && existingAt !== sqIdx) {
@@ -1855,6 +1859,8 @@ function buildAddSheet(sqIdx) {
     renderGrid();
     closeAddSheet();
     showToast(`✓ "${entry.title}" added`);
+    // Return to library if that's where we came from
+    if (sqIdx === null) openLibrary();
   };
 
   // Focus search after open animation
@@ -2303,7 +2309,6 @@ function closeLibrary() {
 }
 
 function openLibrary() {
-  libFilter = 'all'; libQuery = '';
   buildLibrary();
   document.getElementById('library-overlay').classList.add('open');
 }
@@ -2312,17 +2317,23 @@ function buildLibrary() {
   const modal = document.getElementById('library-modal');
   modal.innerHTML = '';
 
-  // Header
+  // Header — title, "+ Add" button, close
   const hdr = el('div', 'pool-hdr');
   const title = el('div', 'pool-title'); title.textContent = 'Library';
+  const headerActions = el('div'); headerActions.style.cssText = 'display:flex;gap:8px;align-items:center;';
+  const addBtn = el('button');
+  addBtn.textContent = '+ Add a book';
+  addBtn.style.cssText = 'background:#f4a93a;color:#2c2456;border:none;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;';
+  addBtn.onclick = () => { closeLibrary(); openAddSheet(null); };
   const closeBtn = el('button', 'pool-close'); closeBtn.innerHTML = '&times;'; closeBtn.setAttribute('aria-label', 'Close');
   closeBtn.onclick = closeLibrary;
-  hdr.appendChild(title); hdr.appendChild(closeBtn);
+  headerActions.appendChild(addBtn); headerActions.appendChild(closeBtn);
+  hdr.appendChild(title); hdr.appendChild(headerActions);
   modal.appendChild(hdr);
 
   if (!pool.length) {
     const empty = el('div', 'pool-empty-state');
-    empty.textContent = 'No books yet — add one by clicking a square on the card.';
+    empty.textContent = "No books yet — click the “+ Add a book” button above, or add one from any square on the card.";
     modal.appendChild(empty);
     return;
   }
