@@ -159,11 +159,6 @@
   .bd-btn-delete:hover { text-decoration: underline; }
   .bd-btn-done { padding: 9px 24px; background: #2c2456; color: #fff; border: none; border-radius: 999px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
 
-  /* Square modal status button */
-  .btn-sm-read { padding: 5px 13px; font-size: 12px; font-weight: 700; border-radius: 999px; border: 1.5px solid #2abcf5; background: transparent; color: #1a8db8; cursor: pointer; white-space: nowrap; font-family: inherit; transition: background 0.12s; }
-  .btn-sm-read:hover { background: #eef9fe; }
-  .btn-sm-read.active { background: #eaf3de; color: #3b6d11; border-color: #639922; }
-  .btn-sm-read.active:hover { background: #d8edca; }
   .modal-footer-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px 14px; }
   .modal-btn-clear { background: none; border: none; font-size: 13px; font-weight: 600; color: #c0392b; cursor: pointer; font-family: inherit; padding: 6px 0; }
   .modal-btn-clear:hover { text-decoration: underline; }
@@ -251,7 +246,7 @@
 
   .btn-io { background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.35); border-radius: 8px; color: #fff; font-size: 12px; font-weight: 600; padding: 6px 12px; cursor: pointer; transition: background 0.15s; }
   .btn-io:hover { background: rgba(255,255,255,0.32); }
-  .btn-io-danger { background: transparent; border-color: rgba(220,100,90,0.45); color: #fff; margin-left: 16px; }
+  .btn-io-danger { background: transparent; border-color: rgba(220,100,90,0.45); color: #fff; margin-left: auto; }
   .btn-io-danger:hover { background: rgba(180,40,30,0.2); color: #fff; }
 
   /* ── Action row (backup / restore / clear) ── */
@@ -265,8 +260,8 @@
   /* ── Add book sheet ── */
   .sheet-scrim { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1010; }
   .sheet-scrim.open { display: block; }
-  .add-sheet { position: fixed; left: 50%; top: 50%; z-index: 1011; background: #fff; border-radius: 20px; box-shadow: 0 8px 40px rgba(0,0,0,0.25); display: flex; flex-direction: column; max-height: 88vh; width: calc(100% - 32px); max-width: 420px; transform: translate(-50%, -50%) scale(0.95); opacity: 0; transition: transform 0.2s cubic-bezier(0.32,0.72,0,1), opacity 0.2s ease; pointer-events: none; }
-  .add-sheet.open { transform: translate(-50%, -50%) scale(1); opacity: 1; pointer-events: auto; }
+  .add-sheet { position: fixed; left: 50%; bottom: 0; z-index: 1011; background: #fff; border-radius: 20px 20px 0 0; box-shadow: 0 -4px 40px rgba(0,0,0,0.2); display: flex; flex-direction: column; max-height: 88vh; width: 100%; max-width: 420px; transform: translateX(-50%) translateY(100%); opacity: 0; transition: transform 0.25s cubic-bezier(0.32,0.72,0,1), opacity 0.2s ease; pointer-events: none; }
+  .add-sheet.open { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
   .add-sheet-head { padding: 18px 20px 14px; border-bottom: 1px solid #f0ede8; flex-shrink: 0; position: relative; }
   .add-sheet-head .sheet-mono { font-size: 12px; font-weight: 600; color: #777; margin-bottom: 4px; }
   .add-sheet-head h2 { font-size: 20px; font-weight: 800; color: #2a1040; margin: 0; }
@@ -529,7 +524,7 @@ function loadData() {
   }
 
   let storedVersion = 0;
-  try { storedVersion = parseInt(localStorage.getItem(VERSION_KEY) || '0'); } catch {}
+  try { const v = parseInt(localStorage.getItem(VERSION_KEY) || '0'); storedVersion = isNaN(v) ? 0 : v; } catch {}
   // Run any migrations newer than the stored version
   for (let v = storedVersion; v < SCHEMA_VERSION; v++) {
     if (MIGRATIONS[v]) ({ pool, asgn } = MIGRATIONS[v]({ pool, asgn }));
@@ -571,8 +566,14 @@ function showCorruptionBanner() {
 
 let { pool, asgn } = loadData();
 
-function savePool() { localStorage.setItem(POOL_KEY, JSON.stringify(pool)); }
-function saveAsgn() { localStorage.setItem(ASGN_KEY, JSON.stringify(asgn)); }
+function savePool() {
+  try { localStorage.setItem(POOL_KEY, JSON.stringify(pool)); }
+  catch { showToast('⚠ Couldn\'t save — storage may be full. Use Backup to export your data.', '#b03a2e'); }
+}
+function saveAsgn() {
+  try { localStorage.setItem(ASGN_KEY, JSON.stringify(asgn)); }
+  catch { showToast('⚠ Couldn\'t save — storage may be full. Use Backup to export your data.', '#b03a2e'); }
+}
 
 // When an unassigned book that's been marked read gets assigned to a square,
 // carry the read state + rating into the new assignment so the user doesn't
@@ -588,14 +589,14 @@ function carryReadIntoAssignment(bookId) {
 }
 
 let substIdx = (() => {
-  try { const s = localStorage.getItem(SUBST_KEY); const n = parseInt(s); return isNaN(n) ? null : n; } catch { return null; }
+  try { const s = localStorage.getItem(SUBST_KEY); const n = parseInt(s); return isNaN(n) || n < 0 || n >= 25 ? null : n; } catch { return null; }
 })();
 function saveSubst() {
   try { if (substIdx === null) localStorage.removeItem(SUBST_KEY); else localStorage.setItem(SUBST_KEY, String(substIdx)); } catch {}
 }
 
 let rereadIdx = (() => {
-  try { const s = localStorage.getItem(REREAD_KEY); const n = parseInt(s); return isNaN(n) ? null : n; } catch { return null; }
+  try { const s = localStorage.getItem(REREAD_KEY); const n = parseInt(s); return isNaN(n) || n < 0 || n >= 25 ? null : n; } catch { return null; }
 })();
 function saveReread() {
   try { if (rereadIdx === null) localStorage.removeItem(REREAD_KEY); else localStorage.setItem(REREAD_KEY, String(rereadIdx)); } catch {}
@@ -773,6 +774,7 @@ function renderGrid() {
           saveStoryCount();
           if (storyCount === 5 && asgn[FIVE_STORIES_IDX]) {
             asgn[FIVE_STORIES_IDX].status = 'read'; saveAsgn();
+            showToast('✓ Five Short Stories complete!');
           }
           renderGrid();
         };
@@ -786,7 +788,9 @@ function renderGrid() {
       const conflictAt = findConflict(book.author, book.id, i);
       if (conflictAt >= 0) {
         div.classList.add('author-conflict');
-        const badge = el('div','sq-conflict'); badge.textContent = '⚠ conflict';
+        const badge = el('div','sq-conflict');
+        badge.textContent = '⚠ repeat author';
+        badge.title = `Same author as "${SQUARES[conflictAt].name}"`;
         cover.appendChild(badge);
       }
     }
@@ -1102,7 +1106,7 @@ function buildModal() {
 
   // ── Footer
   if (book) {
-    // Assigned: Clear square only (Add book option moved into accordion)
+    // Assigned: Clear square only (Add another book moved into accordion)
     modal.appendChild(el('div','modal-sep'));
     const footer = el('div','modal-footer-row');
     const clearBtn = el('button','modal-btn-clear'); clearBtn.textContent = 'Clear square';
@@ -1111,7 +1115,7 @@ function buildModal() {
       delete asgn[idx]; saveAsgn(); buildModal(); renderGrid();
     };
     footer.appendChild(clearBtn);
-    const editBtn = el('button','modal-btn-edit'); editBtn.textContent = 'Add book option';
+    const editBtn = el('button','modal-btn-edit'); editBtn.textContent = 'Add another book';
     editBtn.onclick = () => { closeModal(); openAddSheet(idx); };
     footer.appendChild(editBtn);
     modal.appendChild(footer);
@@ -1128,7 +1132,7 @@ function buildModal() {
     // Has candidates but nothing assigned yet: offer adding another book
     modal.appendChild(el('div','modal-sep'));
     const footer = el('div','modal-footer-row'); footer.style.justifyContent = 'flex-end';
-    const addBtn = el('button','modal-btn-edit'); addBtn.textContent = 'Add book option';
+    const addBtn = el('button','modal-btn-edit'); addBtn.textContent = 'Add another book';
     addBtn.onclick = () => { closeModal(); openAddSheet(idx); };
     footer.appendChild(addBtn);
     modal.appendChild(footer);
@@ -1194,11 +1198,17 @@ async function searchBooks(q) {
   }
 
   // Run both APIs in parallel so we never skip GB covers when OL returns coverless results
+  const withTimeout = (promise, ms) => Promise.race([promise, new Promise(resolve => setTimeout(() => resolve(null), ms))]);
   const [olResult, gbResult] = await Promise.allSettled([
-    fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(q)}&fields=title,author_name,cover_i,key,subject&limit=20`)
-      .then(r => r.ok ? r.json() : null).catch(() => null),
-    fetch(gbUrl(q))
-      .then(r => r.ok ? r.json() : null).catch(() => null),
+    withTimeout(
+      fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(q)}&fields=title,author_name,cover_i,key,subject&limit=20`)
+        .then(r => r.ok ? r.json() : null).catch(() => null),
+      8000
+    ),
+    withTimeout(
+      fetch(gbUrl(q)).then(r => r.ok ? r.json() : null).catch(() => null),
+      8000
+    ),
   ]);
 
   const norm = s => s.toLowerCase().trim().replace(/[''‚‛]/g, "'").replace(/[""„‟]/g, '"');
@@ -1209,9 +1219,9 @@ async function searchBooks(q) {
     if (!data) return [];
     const map = new Map();
     (data.docs||[]).filter(d => d.title && !isNonfiction(d.title, (d.subject||[]).join(' '), (d.author_name||[])[0]||'')).forEach(d => {
-      const key = norm(d.title);
-      if (!map.has(key)) {
-        map.set(key, {
+      const titleKey = norm(d.title);
+      if (!map.has(titleKey)) {
+        map.set(titleKey, {
           title: d.title, author: (d.author_name||[])[0]||'',
           thumb: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-S.jpg` : null,
           cover: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg` : null,
@@ -1219,7 +1229,7 @@ async function searchBooks(q) {
           olWorkKey: d.key || null,
         });
       } else if (d.cover_i) {
-        const entry = map.get(key);
+        const entry = map.get(titleKey);
         const url = `https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg`;
         if (!entry.covers.includes(url)) entry.covers.push(url);
         if (!entry.cover) { entry.cover = url; entry.thumb = `https://covers.openlibrary.org/b/id/${d.cover_i}-S.jpg`; }
@@ -1478,7 +1488,10 @@ async function downloadCard() {
       showToast('✓ Card downloaded');
     }, 'image/png');
   } catch (e) {
-    showToast('Couldn\'t generate image — try again', '#b03a2e');
+    const msg = typeof ctx?.roundRect !== 'function'
+      ? 'Save as image requires a newer browser (Chrome 99+, Safari 15.4+, Firefox 112+)'
+      : 'Couldn\'t generate image — try again';
+    showToast(msg, '#b03a2e');
     console.error(e);
   } finally {
     btn.textContent = originalText;
@@ -1511,12 +1524,13 @@ function importData() {
           b && typeof b.id === 'string' && typeof b.title === 'string' &&
           Array.isArray(b.qualifies) && b.qualifies.every(q => Number.isInteger(q) && q >= 0 && q < 25)
         );
+        const uniqueIds = new Set(data.pool.map(b => b.id)).size === data.pool.length;
         const validAsgn = Object.entries(data.asgn).every(([k, v]) => {
           const ki = parseInt(k);
           return Number.isInteger(ki) && ki >= 0 && ki < 25 &&
             v && typeof v.bookId === 'string' && (v.status === 'assigned' || v.status === 'read');
         });
-        if (!validPool || !validAsgn) throw new Error();
+        if (!validPool || !uniqueIds || !validAsgn) throw new Error();
         if (!confirm('Replace all your current data with this backup?')) return;
         // Run migrations on imported data if it's older than current schema
         let imported = { pool: data.pool, asgn: data.asgn };
@@ -1553,7 +1567,6 @@ let poolDetailOpenCoverEdit = false; // one-shot: auto-expand cover editor on ne
 // closed or reopened). Prevents DOM updates after the modal is gone.
 let bookDetailGen = 0;
 
-// Pool tab feature removed — see pool-feature-backup.md to restore.
 
 // ── Add-book sheet ────────────────────────────────────────────────────────────
 function openAddSheet(sqIdx) {
@@ -1909,7 +1922,6 @@ function buildBookDetail() {
   // Initialize accordion open state on fresh open; preserve on rebuild
   if (poolDetailAccordionOpen === null) {
     poolDetailAccordionOpen = new Set();
-    if (!a) poolDetailAccordionOpen.add('Tag additional squares');
   }
 
   // ── Header
@@ -2030,20 +2042,18 @@ function buildBookDetail() {
       const match = results?.find(r => norm(r.title) === norm(b.title)) || results?.[0];
       let urls = match?.covers ? [...match.covers] : [];
 
-      // Pull more OL editions if we have a work key
-      if (match?.olWorkKey) {
-        const data = await fetch(`https://openlibrary.org${match.olWorkKey}/editions.json?limit=20`)
-          .then(r => r.ok ? r.json() : null).catch(() => null);
-        if (myGen !== bookDetailGen) return;
-        if (data?.entries?.length) {
-          const ids = data.entries.flatMap(e => e.covers || []).filter(id => id > 0);
-          urls.push(...[...new Set(ids)].map(id => `https://covers.openlibrary.org/b/id/${id}-L.jpg`));
-        }
-      }
-
-      // Targeted GB search for more editions
-      const gbData = await fetch(gbUrl(q, 5)).then(r => r.ok ? r.json() : null).catch(() => null);
+      // Pull more OL editions and targeted GB search in parallel
+      const [olEditions, gbData] = await Promise.all([
+        match?.olWorkKey
+          ? fetch(`https://openlibrary.org${match.olWorkKey}/editions.json?limit=20`).then(r => r.ok ? r.json() : null).catch(() => null)
+          : Promise.resolve(null),
+        fetch(gbUrl(q, 5)).then(r => r.ok ? r.json() : null).catch(() => null),
+      ]);
       if (myGen !== bookDetailGen) return;
+      if (olEditions?.entries?.length) {
+        const ids = olEditions.entries.flatMap(e => e.covers || []).filter(id => id > 0);
+        urls.push(...[...new Set(ids)].map(id => `https://covers.openlibrary.org/b/id/${id}-L.jpg`));
+      }
       if (gbData?.items?.length) {
         gbData.items.forEach(item => {
           const info = item.volumeInfo || {};

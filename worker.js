@@ -30,6 +30,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const origin = pickAllowedOrigin(request);
+    if (!origin) return new Response('Forbidden', { status: 403 });
     if (request.method === 'OPTIONS') return corsHeaders(null, 204, 'text/plain', 0, origin);
     if (request.method !== 'GET') return corsHeaders('Method not allowed', 405, 'text/plain', 0, origin);
     if (url.pathname === '/search') return handleSearch(url, env, origin);
@@ -40,7 +41,7 @@ export default {
 
 function pickAllowedOrigin(request) {
   const origin = request.headers.get('Origin');
-  return ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return ALLOWED_ORIGINS.includes(origin) ? origin : null;
 }
 
 async function handleSearch(url, env, origin) {
@@ -111,12 +112,14 @@ async function handleCover(url, origin) {
   const zoom1 = coverUrl.replace(/zoom=\d/, 'zoom=1');
 
   try {
-    const [r0, r1, ph] = await Promise.all([fetch(zoom0), fetch(zoom1), getPlaceholderZ0()]);
+    const [r0, ph] = await Promise.all([fetch(zoom0), getPlaceholderZ0()]);
     const b0 = r0.ok ? await r0.arrayBuffer() : null;
 
     if (b0 && (!ph || !(await isMatch(b0, ph)))) {
       return imageResp(b0, r0.headers.get('Content-Type'), origin);
     }
+    // zoom0 was a placeholder or failed — fall back to zoom1
+    const r1 = await fetch(zoom1);
     if (r1.ok) {
       const b1 = await r1.arrayBuffer();
       return imageResp(b1, r1.headers.get('Content-Type'), origin);
