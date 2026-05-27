@@ -30,7 +30,9 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const origin = pickAllowedOrigin(request);
-    if (!origin) return new Response('Forbidden', { status: 403 });
+    // Only block when Origin is explicitly set to an unknown value (browser CORS fetch from
+    // a foreign page). No Origin header = plain image/resource request — allow it through.
+    if (origin === null) return new Response('Forbidden', { status: 403 });
     if (request.method === 'OPTIONS') return corsHeaders(null, 204, 'text/plain', 0, origin);
     if (request.method !== 'GET') return corsHeaders('Method not allowed', 405, 'text/plain', 0, origin);
     if (url.pathname === '/search') return handleSearch(url, env, origin);
@@ -41,6 +43,7 @@ export default {
 
 function pickAllowedOrigin(request) {
   const origin = request.headers.get('Origin');
+  if (!origin) return ALLOWED_ORIGINS[0]; // no Origin header (image requests) — use default
   return ALLOWED_ORIGINS.includes(origin) ? origin : null;
 }
 

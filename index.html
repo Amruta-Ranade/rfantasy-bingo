@@ -260,8 +260,8 @@
   /* ── Add book sheet ── */
   .sheet-scrim { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1010; }
   .sheet-scrim.open { display: block; }
-  .add-sheet { position: fixed; left: 50%; bottom: 0; z-index: 1011; background: #fff; border-radius: 20px 20px 0 0; box-shadow: 0 -4px 40px rgba(0,0,0,0.2); display: flex; flex-direction: column; max-height: 88vh; width: 100%; max-width: 420px; transform: translateX(-50%) translateY(100%); opacity: 0; transition: transform 0.25s cubic-bezier(0.32,0.72,0,1), opacity 0.2s ease; pointer-events: none; }
-  .add-sheet.open { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
+  .add-sheet { position: fixed; left: 50%; top: 50%; z-index: 1011; background: #fff; border-radius: 20px; box-shadow: 0 8px 40px rgba(0,0,0,0.25); display: flex; flex-direction: column; max-height: 88vh; width: calc(100% - 32px); max-width: 420px; transform: translate(-50%, -50%) scale(0.95); opacity: 0; transition: transform 0.2s cubic-bezier(0.32,0.72,0,1), opacity 0.2s ease; pointer-events: none; }
+  .add-sheet.open { transform: translate(-50%, -50%) scale(1); opacity: 1; pointer-events: auto; }
   .add-sheet-head { padding: 18px 20px 14px; border-bottom: 1px solid #f0ede8; flex-shrink: 0; position: relative; }
   .add-sheet-head .sheet-mono { font-size: 12px; font-weight: 600; color: #777; margin-bottom: 4px; }
   .add-sheet-head h2 { font-size: 20px; font-weight: 800; color: #2a1040; margin: 0; }
