@@ -961,6 +961,16 @@ function buildModal() {
     info.appendChild(actions);
 
     if (a.status === 'read') {
+      const stars = el('div','modal-book-stars');
+      stars.setAttribute('role','group'); stars.setAttribute('aria-label','Rating');
+      for (let k=1;k<=5;k++) {
+        const s = el('span',`b-star${k<=(a.rating||0)?' on':''}`);
+        s.textContent = '★'; s.setAttribute('role','button'); s.setAttribute('aria-label',`${k} star${k>1?'s':''}`);
+        s.onclick = () => { asgn[idx].rating = k; saveAsgn(); buildModal(); renderGrid(); };
+        stars.appendChild(s);
+      }
+      info.appendChild(stars);
+
       const hmLabel = el('label','hm-toggle-sm');
       const hmCb = el('input'); hmCb.type = 'checkbox'; hmCb.checked = !!a.hm;
       hmCb.onchange = () => { asgn[idx].hm = hmCb.checked; saveAsgn(); renderGrid(); };
@@ -983,16 +993,6 @@ function buildModal() {
       rereadLbl.appendChild(rereadCb); rereadLbl.appendChild(document.createTextNode('Re-read'));
       ruleToggles.appendChild(substLbl); ruleToggles.appendChild(rereadLbl);
       info.appendChild(ruleToggles);
-
-      const stars = el('div','modal-book-stars');
-      stars.setAttribute('role','group'); stars.setAttribute('aria-label','Rating');
-      for (let k=1;k<=5;k++) {
-        const s = el('span',`b-star${k<=(a.rating||0)?' on':''}`);
-        s.textContent = '★'; s.setAttribute('role','button'); s.setAttribute('aria-label',`${k} star${k>1?'s':''}`);
-        s.onclick = () => { asgn[idx].rating = k; saveAsgn(); buildModal(); renderGrid(); };
-        stars.appendChild(s);
-      }
-      info.appendChild(stars);
     }
 
     card.appendChild(info);
