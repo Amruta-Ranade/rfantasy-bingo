@@ -2088,6 +2088,8 @@ function buildBookDetail() {
           img.classList.add('sel');
           icIn.value = url;
           icThumb.src = proxyCover(thumbUrl(url)); icThumb.className = 'inline-cover-thumb show';
+          // Preload the full-size URL so Save renders instantly from cache
+          const pre = new Image(); pre.src = proxyCover(url);
         };
         coversStrip.appendChild(img);
       });
