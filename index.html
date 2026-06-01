@@ -1716,8 +1716,10 @@ function buildAddSheet(sqIdx) {
     const covers = [...(book.covers || (book.cover ? [book.cover] : []))].slice(0, 8);
     if (!covers.length) { pCpRow.classList.remove('show'); return; }
     pCpRow.classList.add('show'); pCpStrip.innerHTML = '';
+    // Use -M.jpg thumbnails for OL covers in the strip (faster load); keep -L.jpg as saved value
+    const thumbUrl = u => u.includes('covers.openlibrary.org') && u.endsWith('-L.jpg') ? u.replace('-L.jpg', '-M.jpg') : u;
     covers.forEach(url => {
-      const img = el('img', 'cover-opt' + (url === activeUrl ? ' sel' : '')); img.src = proxyCover(url); img.alt = '';
+      const img = el('img', 'cover-opt' + (url === activeUrl ? ' sel' : '')); img.src = proxyCover(thumbUrl(url)); img.alt = '';
       img.onerror = () => img.remove();
       img.onload = () => { if (img.naturalWidth < 60 || img.naturalHeight < 80) img.remove(); };
       img.onclick = () => {
@@ -1726,6 +1728,8 @@ function buildAddSheet(sqIdx) {
         if (pPending) { pPending.coverUrl = url; pPending._apiCover = url; }
         // Clear any custom URL field so picker choice takes effect
         pCuIn.value = ''; pCuThumb.src = ''; pCuThumb.classList.remove('show');
+        // Preload the full-size version so it's cached when saved
+        const pre = new Image(); pre.src = proxyCover(url);
       };
       pCpStrip.appendChild(img);
     });
