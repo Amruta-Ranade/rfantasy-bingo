@@ -1715,19 +1715,9 @@ function buildAddSheet(sqIdx) {
   function pRenderCovers(book, activeUrl) {
     const covers = [...(book.covers || (book.cover ? [book.cover] : []))].slice(0, 8);
     if (!covers.length) { pCpRow.classList.remove('show'); return; }
-    pCpRow.classList.add('show');
-    // Update .sel on already-rendered images (don't recreate — keeps in-flight requests alive)
-    const coverSet = new Set(covers);
-    pCpStrip.querySelectorAll('.cover-opt[data-url]').forEach(img => {
-      img.classList.toggle('sel', img.dataset.url === activeUrl);
-      if (!coverSet.has(img.dataset.url)) img.remove(); // prune covers no longer in list
-    });
-    // Append only new covers not yet in the strip
-    const existing = new Set([...pCpStrip.querySelectorAll('.cover-opt[data-url]')].map(i => i.dataset.url));
+    pCpRow.classList.add('show'); pCpStrip.innerHTML = '';
     covers.forEach(url => {
-      if (existing.has(url)) return;
-      const img = el('img', 'cover-opt' + (url === activeUrl ? ' sel' : ''));
-      img.src = proxyCover(url); img.dataset.url = url; img.alt = '';
+      const img = el('img', 'cover-opt' + (url === activeUrl ? ' sel' : '')); img.src = proxyCover(url); img.alt = '';
       img.onerror = () => img.remove();
       img.onload = () => { if (img.naturalWidth < 60 || img.naturalHeight < 80) img.remove(); };
       img.onclick = () => {
@@ -1755,7 +1745,6 @@ function buildAddSheet(sqIdx) {
       pCuRow.style.display = 'none';
       return;
     }
-    pCpStrip.innerHTML = ''; // clear for new book before first render
     pRenderCovers(b, b.cover || null);
     // Show the custom URL row; reset it
     pCuRow.style.display = 'flex'; pCuIn.value = ''; pCuThumb.src = ''; pCuThumb.classList.remove('show');
