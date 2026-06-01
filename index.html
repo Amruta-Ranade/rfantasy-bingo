@@ -1715,11 +1715,19 @@ function buildAddSheet(sqIdx) {
   function pRenderCovers(book, activeUrl) {
     const covers = [...(book.covers || (book.cover ? [book.cover] : []))].slice(0, 8);
     if (!covers.length) { pCpRow.classList.remove('show'); return; }
-    pCpRow.classList.add('show'); pCpStrip.innerHTML = '';
-    // Use -M.jpg thumbnails for OL covers in the strip (faster load); keep -L.jpg as saved value
-    const thumbUrl = u => u.includes('covers.openlibrary.org') && u.endsWith('-L.jpg') ? u.replace('-L.jpg', '-M.jpg') : u;
+    pCpRow.classList.add('show');
+    // Update .sel on already-rendered images (don't recreate — keeps in-flight requests alive)
+    const coverSet = new Set(covers);
+    pCpStrip.querySelectorAll('.cover-opt[data-url]').forEach(img => {
+      img.classList.toggle('sel', img.dataset.url === activeUrl);
+      if (!coverSet.has(img.dataset.url)) img.remove(); // prune covers no longer in list
+    });
+    // Append only new covers not yet in the strip
+    const existing = new Set([...pCpStrip.querySelectorAll('.cover-opt[data-url]')].map(i => i.dataset.url));
     covers.forEach(url => {
-      const img = el('img', 'cover-opt' + (url === activeUrl ? ' sel' : '')); img.src = proxyCover(thumbUrl(url)); img.alt = '';
+      if (existing.has(url)) return;
+      const img = el('img', 'cover-opt' + (url === activeUrl ? ' sel' : ''));
+      img.src = proxyCover(url); img.dataset.url = url; img.alt = '';
       img.onerror = () => img.remove();
       img.onload = () => { if (img.naturalWidth < 60 || img.naturalHeight < 80) img.remove(); };
       img.onclick = () => {
@@ -1728,8 +1736,6 @@ function buildAddSheet(sqIdx) {
         if (pPending) { pPending.coverUrl = url; pPending._apiCover = url; }
         // Clear any custom URL field so picker choice takes effect
         pCuIn.value = ''; pCuThumb.src = ''; pCuThumb.classList.remove('show');
-        // Preload the full-size version so it's cached when saved
-        const pre = new Image(); pre.src = proxyCover(url);
       };
       pCpStrip.appendChild(img);
     });
@@ -1749,6 +1755,7 @@ function buildAddSheet(sqIdx) {
       pCuRow.style.display = 'none';
       return;
     }
+    pCpStrip.innerHTML = ''; // clear for new book before first render
     pRenderCovers(b, b.cover || null);
     // Show the custom URL row; reset it
     pCuRow.style.display = 'flex'; pCuIn.value = ''; pCuThumb.src = ''; pCuThumb.classList.remove('show');
@@ -1942,7 +1949,9 @@ function buildBookDetail() {
   const hdr = el('div', 'bd-header');
   const coverWrap = el('div', 'modal-book-cover-wrap');
   const coverEl = el('div', 'bd-cover');
-  renderCoverInto(coverEl, b.coverUrl, { alt: b.title });
+  // bd-cover is 68×98px — -M.jpg is sufficient and matches the edit-cover strip thumbnails
+  const olThumb = u => u?.includes('covers.openlibrary.org') && u?.endsWith('-L.jpg') ? u.replace('-L.jpg', '-M.jpg') : u;
+  renderCoverInto(coverEl, olThumb(b.coverUrl), { alt: b.title });
   coverWrap.appendChild(coverEl);
   const ecLink = el('button', 'modal-edit-cover-link'); ecLink.textContent = 'Edit cover';
   ecLink.onclick = () => { coverEditSection.style.display = coverEditSection.style.display === 'none' ? 'block' : 'none'; };
@@ -2092,8 +2101,6 @@ function buildBookDetail() {
           img.classList.add('sel');
           icIn.value = url;
           icThumb.src = proxyCover(thumbUrl(url)); icThumb.className = 'inline-cover-thumb show';
-          // Preload the full-size URL so Save renders instantly from cache
-          const pre = new Image(); pre.src = proxyCover(url);
         };
         coversStrip.appendChild(img);
       });
